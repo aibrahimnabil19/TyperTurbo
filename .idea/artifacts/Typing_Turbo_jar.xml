@@ -1,0 +1,16 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Typing Turbo:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Typing_Turbo_jar</output-path>
+    <root id="archive" name="Typing Test.jar">
+      <element id="module-output" name="Typing Test" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Jars/javax.mail-1.6.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Jars/flatlaf-3.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Jars/activation-1.1.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../sqlite-jdbc-3.49.1.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Jars/radiance-theming-7.5.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Jars/radiance-animation-7.5.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Jars/swingx-1.6.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Jars/jl1.0.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

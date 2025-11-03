@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="radiance-theming-7.5.0">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../Jars/radiance-theming-7.5.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Jars/radiance-animation-7.5.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
