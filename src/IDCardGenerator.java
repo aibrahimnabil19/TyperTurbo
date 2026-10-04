@@ -131,7 +131,7 @@ public class IDCardGenerator extends JFrame {
 
         // Save
         JFileChooser chooser = new JFileChooser();
-        chooser.setSelectedFile(new File("C:\\Users\\User\\Documents\\untitled\\src\\Images\\001.tif"));
+        chooser.setSelectedFile(new File(System.getProperty("user.home"), "001.tif"));
         if (chooser.showSaveDialog(this)==JFileChooser.APPROVE_OPTION) {
             try {
                 ImageIO.write(card, "TIFF", chooser.getSelectedFile());

@@ -8,8 +8,15 @@ public final class ResourceUtils {
 
     /** Returns a URL for a classpath resource (or null if not found) */
     public static URL getResourceUrl(String resourcePath) {
-        // Leading slash expected: "/Images/xxx.png"
-        return ResourceUtils.class.getResource(resourcePath);
+        try {
+            return AssetResolver.resolveToUrl(resourcePath);
+        } catch (IOException e) {
+            String fallback = resourcePath;
+            if (fallback != null && !fallback.startsWith("/")) {
+                fallback = "/" + fallback;
+            }
+            return ResourceUtils.class.getResource(fallback);
+        }
     }
 
     /** Create a scaled ImageIcon from a resource path (returns placeholder if not found) */

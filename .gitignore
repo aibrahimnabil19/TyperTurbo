@@ -27,3 +27,36 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+# Build output
+/build/
+/out/
+
+# Generated installers
+/installer-output/
+
+# IDE local files
+.idea/workspace.xml
+.idea/copilot.data.migration.agent.xml
+
+# Local development databases
+*.db
+
+# Java build artifacts
+*.class
+
+# Build output
+/build/
+/out/
+
+# Generated installers
+/installer-output/
+
+# IDE local files
+.idea/workspace.xml
+.idea/copilot.data.migration.agent.xml
+
+# Local development databases
+*.db
+
+# Java build artifacts
+*.class

@@ -1,4 +1,6 @@
 import java.io.File;
+//import java.net.URL;
+//import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,6 +13,8 @@ public final class DBUtil {
     public static final String DB_URL;
 
     static {
+        ensureSqliteDriver();
+
         String appdir;
         String maybeAppData = System.getenv("APPDATA");
         if (maybeAppData != null && !maybeAppData.isBlank()) {
@@ -43,7 +47,18 @@ public final class DBUtil {
 
     private DBUtil() {}
 
+    private static void ensureSqliteDriver() {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new ExceptionInInitializerError(
+                    new ClassNotFoundException("org.sqlite.JDBC", e)
+            );
+        }
+    }
+
     public static Connection getConnection() throws SQLException {
+        ensureSqliteDriver();
         return DriverManager.getConnection(DB_URL);
     }
 
@@ -58,7 +73,29 @@ public final class DBUtil {
                     "FOREIGN KEY(user_id) REFERENCES users(id))");
             stmt.execute("CREATE TABLE IF NOT EXISTS statistics (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, wpm REAL, accuracy REAL, errorCount INTEGER, wordCount INTEGER, " +
+                    "played_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
                     "FOREIGN KEY(user_id) REFERENCES users(id))");
+            ensureStatisticsPlayedAtColumn(conn);
+        }
+    }
+
+    private static void ensureStatisticsPlayedAtColumn(Connection conn) throws SQLException {
+        boolean hasPlayedAt = false;
+        try (Statement stmt = conn.createStatement();
+             ResultSet columns = stmt.executeQuery("PRAGMA table_info(statistics)")) {
+            while (columns.next()) {
+                if ("played_at".equalsIgnoreCase(columns.getString("name"))) {
+                    hasPlayedAt = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasPlayedAt) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE statistics ADD COLUMN played_at DATETIME");
+                stmt.execute("UPDATE statistics SET played_at = CURRENT_TIMESTAMP WHERE played_at IS NULL");
+            }
         }
     }
 

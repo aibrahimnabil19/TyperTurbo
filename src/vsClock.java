@@ -1,13 +1,9 @@
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.Random;
@@ -22,10 +18,10 @@ public class vsClock {
     static JPanel shadowPanel;
     private static MusicPlayer musicPlayer = new MusicPlayer();
     private static java.util.List<String> vsClockSongs = java.util.List.of(
-            "C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Easy Cheesy.mp3"
+            "main/resources/Audio/Easy Cheesy.mp3"
     );
 public static void openGameFrame(String difficulty, String timeLimit, String username) throws IOException {
-    gameFrame = new JFrame("vs Clock");
+    gameFrame = new JFrame(I18n.t("Clock"));
     gameFrame.setLayout(null);
     gameFrame.setSize(800, 550);
     gameFrame.setLocationRelativeTo(null);
@@ -37,7 +33,7 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
     SoundManager.setMusicPlayer(musicPlayer);
     playSound();
 
-    RoundedButton backBtn = new RoundedButton("← Back",false);
+    RoundedButton backBtn = new RoundedButton("← " + I18n.t("Back"),false);
     backBtn.setBounds(5, 19, 100, 30);
     backBtn.addActionListener(e -> {
         SoundManager.stopBackgroundMusic();
@@ -51,8 +47,8 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
     });
     gameFrame.getContentPane().add(backBtn);
 
-    ImageIcon pause = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\pause.png", 29, 27,true);
-    ImageIcon pauseHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\pause hover.png", 29, 27,true);
+    ImageIcon pause = ImageUtils.createScaledIcon("main/resources/Images/pause.png", 29, 27,true);
+    ImageIcon pauseHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/pause hover.png", 29, 27,true);
     JButton pausebtn = new JButton(pause);
     pausebtn.setBounds(743,20,29, 27);
     pausebtn.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -67,21 +63,21 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
         shadowPanel.setVisible(false);
 
 // Example resume button on shadow panel
-        JButton resumeButton = new JButton("Resume");
+        JButton resumeButton = new JButton(I18n.t("Resume"));
         resumeButton.setFont(new Font("Century Gothic", Font.BOLD, 20));
         resumeButton.setBounds(325, 150, 150, 50);
         shadowPanel.add(resumeButton);
 
-        JButton quitButton = new JButton("Quit");
+        JButton quitButton = new JButton(I18n.t("Quit"));
         quitButton.setFont(new Font("Century Gothic", Font.BOLD, 20));
         quitButton.setBounds(325, 350, 150, 50);
         shadowPanel.add(quitButton);
         quitButton.addActionListener(e -> {
-            String[] options = {"Homepage", "Exit Game"};
+            String[] options = {I18n.t("Homepage"), I18n.t("Exit Game")};
             int choice = JOptionPane.showOptionDialog(
                     gameFrame,                                       // parent component
-                    "What would you like to do?",                // message
-                    "Quit Game",                                 // title
+                    I18n.t("What would you like to do?"),        // message
+                    I18n.t("Quit Game"),                         // title
                     JOptionPane.DEFAULT_OPTION,                  // optionType
                     JOptionPane.QUESTION_MESSAGE,                // messageType
                     null,                                        // icon
@@ -113,14 +109,22 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
             countdownTimer.start();
             isPaused = false;
         });
-    JButton settingsButton = new JButton("Settings");
+    JButton settingsButton = new JButton(I18n.t("Settings"));
     settingsButton.setFont(new Font("Century Gothic", Font.BOLD, 20));
     settingsButton.setBounds(325, 250, 150, 50);
     shadowPanel.add(settingsButton);
     settingsButton.addActionListener(e -> {
         new Settings(() -> {
-            // for example: re-show the HomePage
             shadowPanel.setVisible(true);
+        }, () -> {
+            SoundManager.stopBackgroundMusic();
+            if (countdownTimer != null) countdownTimer.stop();
+            gameFrame.dispose();
+            try {
+                new HomePage();
+            } catch (IOException ex) {
+                throw new IllegalStateException("Could not reopen the homepage", ex);
+            }
         });
         ThemeManager.applyTheme(ThemeManager.getCurrentTheme());
     });
@@ -152,7 +156,8 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
     gameFrame.add(linePanel2);
 
     String[] words = getWordsBasedOnDifficulty(difficulty);
-    final String[] currentWord = {words[random.nextInt(words.length)]};
+    WordCycle wordCycle = new WordCycle(words, random);
+    final String[] currentWord = {wordCycle.next()};
 
     JLabel wordLabel = new JLabel(currentWord[0], SwingConstants.CENTER);
     wordLabel.setFont(new Font("Century Gothic", Font.BOLD, 40));
@@ -173,7 +178,7 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
     scorePanel.setLayout(null);
     scorePanel.setOpaque(false);
 
-    JLabel score = new JLabel("SCORE: ");
+    JLabel score = new JLabel(I18n.t("SCORE: "));
     score.setFont(new Font("Century Gothic", Font.BOLD, 30));
     score.setBounds(50, 3, 155, 39);
     score.setForeground(Color.WHITE);
@@ -213,6 +218,11 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
     final int[] index = {0};
     final int[] num = {0};
     final int[] errorCount = {0};
+    Color normalBackground = gameFrame.getContentPane().getBackground();
+    if (normalBackground == null) normalBackground = UIManager.getColor("Panel.background");
+    final Color flashBackground = normalBackground;
+    Timer redFlashTimer = new Timer(200, e -> gameFrame.getContentPane().setBackground(flashBackground));
+    redFlashTimer.setRepeats(false);
         countdownTimer = new Timer(1000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -221,7 +231,7 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
                     timerLabel.setText(timeRemaining[0] + "s");
                 } else if (timeRemaining[0] == 0) {
                     ((Timer)e.getSource()).stop();
-                    timerLabel.setText("Time's up!");
+                    timerLabel.setText(I18n.t("Time's up!"));
                     timerLabel.setBounds(335, 465, 200, 30);
                     gameFrame.removeKeyListener(gameFrame.getKeyListeners()[0]);
                     double minutes = Integer.parseInt(timeLimit) / 60.0;
@@ -272,14 +282,10 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
                     } else if (i == index[0] && Character.toLowerCase(typedChar) != Character.toLowerCase(currentWord[0].charAt(index[0]))) {
                         formattedText.append("<font color='red'>").append(currentWord[0].charAt(i)).append("</font>");
                         mistakeMade = true;
-                        playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\0429.WAV");
+                        playEffect("main/resources/Audio/0429.WAV");
                         errorCount[0]++;
-                        Color orig = gameFrame.getContentPane().getBackground();
                         gameFrame.getContentPane().setBackground(Color.RED);
-                        new Timer(200, ev -> {
-                            ((Timer)ev.getSource()).stop();
-                            gameFrame.getContentPane().setBackground(orig);
-                        }).start();
+                        redFlashTimer.restart();
                     } else {
                         formattedText.append(currentWord[0].charAt(i));
                     }
@@ -297,7 +303,7 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
                 scoreNum.setText(String.valueOf(num[0]));
                 index[0] = 0;
                 saveVsClockScore(username, difficulty, Integer.parseInt(timeLimit), Integer.parseInt(scoreNum.getText()));
-                currentWord[0] = words[random.nextInt(words.length)];
+                currentWord[0] = wordCycle.next();
                 wordLabel.setText(currentWord[0]);
             }
         }
@@ -331,7 +337,7 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
 }
 
     public static String getHighScore(String username, String difficulty, String timeLimit) {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db")) {
+        try (Connection conn = DBUtil.getConnection()) {
             PreparedStatement stmt = conn.prepareStatement("""
             SELECT MAX(v.score) AS high_score
             FROM vs_clock_scores v
@@ -345,17 +351,17 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
 
             if (rs.next() && rs.getInt("high_score") > 0) {
                 int score = rs.getInt("high_score");
-                return "High Score: " + score;
+                return                 I18n.t("High Score:") + " " + score;
             } else {
-                return "High Score: 0";
+                return I18n.t("High Score:") + " 0";
             }
         } catch (SQLException ex) {
-            return "Error retrieving score: " + ex.getMessage();
+            return I18n.t("Error retrieving score:") + " " + ex.getMessage();
         }
     }
 
     public static void saveVsClockScore(String username, String difficulty, int timeLimit, int score) {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db")) {
+        try (Connection conn = DBUtil.getConnection()) {
             // get the user's ID
             PreparedStatement getUserIdStmt = conn.prepareStatement(
                     "SELECT id FROM users WHERE username = ?"
@@ -393,7 +399,7 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
+                    I18n.t("Database Error"), JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -401,6 +407,18 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
 
     // Method to return words based on the selected difficulty
     public static String[] getWordsBasedOnDifficulty(String difficulty) {
+        if (I18n.isFrench()) {
+            return switch (difficulty) {
+                case "Easy" -> new String[]{"CHAT", "CHIEN", "SOLEIL", "ROUGE", "BLEU", "POISSON", "LIVRE", "TABLE", "LUNE", "ÉTOILE",
+                        "EAU", "VERT", "MAISON", "MUSIQUE", "ARBRE", "OISEAU", "PAIN", "PLUIE", "NEIGE", "VENT"};
+                case "Intermediate" -> new String[]{"jardin", "crayon", "hiver", "coucher", "fusée", "planète", "silence", "ami", "violet", "banane",
+                        "peintre", "image", "brise", "papillon", "diamant", "équilibre", "plume", "énigme", "lanterne", "bibliothèque"};
+                case "Hard" -> new String[]{"éléphant", "clavier", "montagne", "parapluie", "chuchoter", "vélocité", "triangle", "meuble", "bicyclette", "stratégie",
+                        "avalanche", "horizon", "microscope", "parallèle", "squelette", "phare", "aventure", "terracotta", "invisible", "télescope"};
+                default -> new String[]{"philosophie", "encyclopédie", "silhouette", "hypothèse", "quarantaine", "astronomie", "synchroniser", "architecture", "vocabulaire", "conséquence",
+                        "métamorphose", "phénomène", "circonférence", "catastrophe", "bureaucratie", "juxtaposition", "inédit", "paradoxal", "sophistiqué", "perspective"};
+            };
+        }
         switch (difficulty) {
             case "Easy":
                 return new String[] {
@@ -457,8 +475,7 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
                                       double accuracy,
                                       int errorCount,
                                       int wordCount) {
-        String url = "jdbc:sqlite:game_scores.db";
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DBUtil.getConnection()) {
             conn.setAutoCommit(false);
 
             // 1) look up the user’s ID
@@ -474,8 +491,8 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
 
             // 2) insert the stats row
             PreparedStatement ins = conn.prepareStatement(
-                    "INSERT INTO statistics (user_id, wpm, accuracy, errorCount, wordCount) " +
-                            "VALUES (?, ?, ?, ?, ?)");
+                    "INSERT INTO statistics (user_id, wpm, accuracy, errorCount, wordCount, played_at) " +
+                            "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)");
             ins.setInt(1, userId);
             ins.setDouble(2, wpm);
             ins.setDouble(3, accuracy);
@@ -487,21 +504,14 @@ public static void openGameFrame(String difficulty, String timeLimit, String use
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null,
-                    "Could not save statistics:\n" + e.getMessage(),
-                    "Database Error",
+                    I18n.t("Could not save statistics:\n") + e.getMessage(),
+                    I18n.t("Database Error"),
                     JOptionPane.ERROR_MESSAGE);
         }
     }
 
     public static void playEffect(String soundPath) {
-        try {
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File(soundPath));
-            Clip clip = AudioSystem.getClip();
-            clip.open(audioInputStream);
-            clip.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        SoundManager.playEffect(soundPath);
     }
     public static void playSound() {
         // let SoundManager decide if music should play or not
