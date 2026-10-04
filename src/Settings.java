@@ -17,11 +17,17 @@ public class Settings  {
 //    private final HomePage homePage;
     String username;
     private final Runnable onBack;
+    private final Runnable onLanguageChange;
 
     public Settings(Runnable onBack) {
+        this(onBack, Settings::openHomePage);
+    }
+
+    public Settings(Runnable onBack, Runnable onLanguageChange) {
         this.onBack = onBack;
+        this.onLanguageChange = onLanguageChange;
         this.username = HomePage.getSelectedUsername();
-        frame.setTitle("Settings");
+        frame.setTitle(I18n.t("Settings"));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 550);
         frame.setLocationRelativeTo(null);
@@ -29,8 +35,8 @@ public class Settings  {
 
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
-        JLabel versionlbl = new JLabel("Version 1.0");
-        JLabel copyright = new JLabel("copyright @Aishatek 2025");
+        JLabel versionlbl = new JLabel(I18n.t("Version 1.0"));
+        JLabel copyright = new JLabel(I18n.t("copyright @Aishatek 2025"));
         versionlbl.setFont(new Font("Century Gothic",Font.PLAIN,20));
         copyright.setFont(new Font("Century Gothic",Font.ITALIC,15));
         versionlbl.setBounds(350,400,200,100);
@@ -38,7 +44,7 @@ public class Settings  {
         frame.add(versionlbl);
         frame.add(copyright);
 
-        RoundedButton backBtn = new RoundedButton("← Back",false);
+        RoundedButton backBtn = new RoundedButton("← " + I18n.t("Back"),false);
         backBtn.setBounds(10, 5, 100, 20);
         backBtn.addActionListener(e -> {
             frame.dispose();      // close settings
@@ -55,6 +61,7 @@ public class Settings  {
                 "Game Modes",
                 "Themes",
                 "Sound & Effects",
+                "Language",
                 "Credits",
                 "Help & Support"
         };
@@ -63,7 +70,7 @@ public class Settings  {
         int space = 47;
 
         for (String option : options) {
-            RoundedButton button = new RoundedButton(option,true);
+            RoundedButton button = new RoundedButton(I18n.t(option),true);
 //            JButton button = new JButton(option);
             button.setBounds(x, y, width, height);
             button.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -95,7 +102,7 @@ public class Settings  {
         contentPanel.setBounds(10, 67, 765, 360);
         contentPanel.setBackground(Color.white);
 
-        JLabel title = new JLabel(name);
+        JLabel title = new JLabel(I18n.t(name));
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
         title.setBounds(20, 20, 500, 40);
         title.setForeground(new Color(195,88,42));
@@ -120,13 +127,13 @@ public class Settings  {
             case "Profile":
                 username = HomePage.getSelectedUsername();
 
-                JLabel userLabel = new JLabel("Username: " + username);
+                JLabel userLabel = new JLabel(I18n.t("Username:") + " " + username);
                 userLabel.setFont(new Font("Arial", Font.BOLD, 18));
                 userLabel.setBounds(250, 100, 400, 30);
                 userLabel.setForeground(new Color(50, 50, 50));
                 contentPanel.add(userLabel);
 
-                JButton renameButton = new JButton("Rename My Account");
+                JButton renameButton = new JButton(I18n.t("Rename My Account"));
                 renameButton.setBounds(250, 160, 250, 40);
                 renameButton.setFocusPainted(false);
                 renameButton.setBackground(new Color(195, 88, 42));
@@ -137,7 +144,7 @@ public class Settings  {
                 renameButton.addActionListener(e -> {
                     String newName = JOptionPane.showInputDialog(
                             contentPanel,
-                            "Enter your new username:",
+                            I18n.t("Enter your new username:"),
                             username
                     );
                     if (newName != null && !newName.trim().isEmpty()) {
@@ -146,13 +153,13 @@ public class Settings  {
                             boolean ok = Settings.renameUser(userId, newName.trim());
                             if (ok) {
                                 username = newName.trim();
-                                JOptionPane.showMessageDialog(contentPanel, "Username changed!");
+                                JOptionPane.showMessageDialog(contentPanel, I18n.t("Username changed!"));
                                 HomePage.setSelectedUsername(newName.trim());
-                                userLabel.setText("Username: " + newName.trim());
+                                userLabel.setText(I18n.t("Username:") + " " + newName.trim());
                             } else {
                                 JOptionPane.showMessageDialog(contentPanel,
-                                        "Failed to rename (maybe already in use).",
-                                        "Error",
+                                        I18n.t("Failed to rename (maybe already in use)."),
+                                        I18n.t("Error"),
                                         JOptionPane.ERROR_MESSAGE);
                             }
                         }
@@ -160,7 +167,7 @@ public class Settings  {
                 });
                 contentPanel.add(renameButton);
 
-                JButton deleteButton = new JButton("Delete My Account");
+                JButton deleteButton = new JButton(I18n.t("Delete My Account"));
                 deleteButton.setBounds(250, 220, 250, 40);
                 deleteButton.setFocusPainted(false);
                 deleteButton.setBackground(new Color(220, 20, 60));
@@ -172,13 +179,13 @@ public class Settings  {
 //                deleteButton.setBackground(Color.WHITE);
                 deleteButton.addActionListener(e -> {
                     int confirm = JOptionPane.showConfirmDialog(contentPanel,
-                            "Are you sure you want to delete your account?\nThis action cannot be undone.",
-                            "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+                            I18n.t("Are you sure you want to delete your account?\nThis action cannot be undone."),
+                            I18n.t("Confirm Deletion"), JOptionPane.YES_NO_OPTION);
                     if (confirm == JOptionPane.YES_OPTION) {
                         int userId = Settings.getUserId(username);
                         if (userId != -1) {
                             Settings.deleteUserCompletely(userId);
-                            JOptionPane.showMessageDialog(contentPanel, "Account deleted.");
+                            JOptionPane.showMessageDialog(contentPanel, I18n.t("Account deleted."));
                             SwingUtilities.getWindowAncestor(contentPanel).dispose();
                         }
                     }
@@ -193,11 +200,11 @@ public class Settings  {
 
                 // 1) Define table columns
                 Vector<String> columnNames = new Vector<>();
-                columnNames.add("Date");
-                columnNames.add("WPM");
-                columnNames.add("Accuracy");
-                columnNames.add("Errors");
-                columnNames.add("Words");
+                columnNames.add(I18n.t("Date"));
+                columnNames.add(I18n.t("WPM"));
+                columnNames.add(I18n.t("Accuracy"));
+                columnNames.add(I18n.t("Errors"));
+                columnNames.add(I18n.t("Words"));
 
                 // 2) Load data & accumulate sums
                 Vector<Vector<Object>> data = new Vector<>();
@@ -211,7 +218,7 @@ public class Settings  {
                 double sumWpm = 0, sumAcc = 0;
                 int    sumErr = 0, sumWords = 0, rowCount = 0;
 
-                try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db");
+                try (Connection conn = DBUtil.getConnection();
                      PreparedStatement ps = conn.prepareStatement(sql)) {
 
                     ps.setInt(1, userId);
@@ -241,8 +248,8 @@ public class Settings  {
                 } catch (SQLException ex) {
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(frame,
-                            "Could not load typing stats:\n" + ex.getMessage(),
-                            "Database Error", JOptionPane.ERROR_MESSAGE);
+                            I18n.t("Could not load typing stats:\n") + ex.getMessage(),
+                            I18n.t("Database Error"), JOptionPane.ERROR_MESSAGE);
                 }
 
                 // 3) Build the table in a scroll pane
@@ -262,28 +269,28 @@ public class Settings  {
                     int labelY = 360;
                     int labelH = 25;
                     // Labels for each stat
-                    JLabel avgLabel = new JLabel("Averages over " + rowCount + " sessions:");
+                    JLabel avgLabel = new JLabel(I18n.t("Averages over ") + rowCount + I18n.t(" sessions:"));
                     avgLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
                     avgLabel.setBounds(20, labelY, 250, labelH);
                     contentPanel.add(avgLabel);
 
-                    JLabel wpmLabel = new JLabel(String.format("WPM: %.1f", avgWpm));
+                    JLabel wpmLabel = new JLabel(String.format(I18n.t("WPM: %.1f"), avgWpm));
                     wpmLabel.setBounds(280, labelY, 120, labelH);
                     contentPanel.add(wpmLabel);
 
-                    JLabel accLabel = new JLabel(String.format("Accuracy: %.1f%%", avgAcc));
+                    JLabel accLabel = new JLabel(String.format(I18n.t("Accuracy: %.1f%%"), avgAcc));
                     accLabel.setBounds(400, labelY, 140, labelH);
                     contentPanel.add(accLabel);
 
-                    JLabel errLabel = new JLabel(String.format("Errors: %.1f", avgErr));
+                    JLabel errLabel = new JLabel(String.format(I18n.t("Errors: %.1f"), avgErr));
                     errLabel.setBounds(550, labelY, 120, labelH);
                     contentPanel.add(errLabel);
 
-                    JLabel wordsLabel = new JLabel(String.format("Words: %.1f", avgWords));
+                    JLabel wordsLabel = new JLabel(String.format(I18n.t("Words: %.1f"), avgWords));
                     wordsLabel.setBounds(650, labelY, 120, labelH);
                     contentPanel.add(wordsLabel);
                 } else {
-                    JLabel none = new JLabel("No typing sessions recorded yet.");
+                    JLabel none = new JLabel(I18n.t("No typing sessions recorded yet."));
                     none.setBounds(20, 360, 300, 25);
                     contentPanel.add(none);
                 }
@@ -339,20 +346,28 @@ public class Settings  {
                                 + "<li>Coming in 1.1: full Level Up experience with unlockable achievements.</li>"
                                 + "</ul></html>"
                 };
+                if (I18n.isFrench()) {
+                    descriptions = new String[]{
+                            "<html><h2>Mode Sans fin</h2><ul><li>Écrivez autant de mots que possible sans perdre toutes vos vies.</li><li>Les mots arrivent de plus en plus vite.</li><li>Vous commencez avec 3 vies ; chaque faute ou mot manqué en coûte une.</li><li>La vitesse augmente à chaque niveau.</li></ul></html>",
+                            "<html><h2>Mode Défi</h2><ul><li>Jouez à une série de mini-jeux de frappe aléatoires.</li><li>Chaque manche propose un défi différent.</li><li>Réussissez avant la fin du temps imparti.</li><li>Essayez de terminer autant de manches que possible.</li></ul></html>",
+                            "<html><h2>Mode Contre-la-montre</h2><ul><li>Saisissez autant de mots complets que possible avant la fin du temps.</li><li>Choisissez une durée et une difficulté.</li><li>Chaque mot correctement saisi ajoute un point.</li><li>Votre meilleur score est enregistré.</li></ul></html>",
+                            "<html><h2>Mode Niveau supérieur</h2><ul><li>Progressez à travers des textes de plus en plus complexes.</li><li>Les niveaux ajoutent des mots, de la ponctuation et des exigences de vitesse.</li><li>Le mode complet sera disponible dans une prochaine version.</li></ul></html>"
+                    };
+                }
 
                 for (int i = 0; i < modes.length; i++) {
-                    JButton btn = new RoundedButton(modes[i]);
+                    JButton btn = new RoundedButton(I18n.t(modes[i]));
                     btn.setFont(new Font("Century Gothic", Font.BOLD, 18));
                     btn.setBackground(new Color(240,224,208));
                     btn.setFocusPainted(false);
 
-                    final String modeName = modes[i];
-                    final String desc     = descriptions[i];
+                    final String modeName = I18n.t(modes[i]);
+                    final String desc     = I18n.t(descriptions[i]);
                     btn.addActionListener(e -> {
                         JOptionPane.showMessageDialog(
                                 contentPanel,
                                 desc,
-                                modeName + " Instructions",
+                                modeName + " " + I18n.t("Instructions"),
                                 JOptionPane.INFORMATION_MESSAGE
                         );
                     });
@@ -365,26 +380,44 @@ public class Settings  {
 
 
             case "Themes":
-                String[] opts = { "Light", "Dark" };
+                String[] opts = I18n.isFrench()
+                        ? new String[]{"Clair", "Sombre"}
+                        : new String[]{"Light", "Dark"};
                 String choice = (String) JOptionPane.showInputDialog(
-                        frame, "Choose theme:", "Themes",
+                        frame, I18n.t("Choose theme:"), I18n.t("Themes"),
                         JOptionPane.PLAIN_MESSAGE, null, opts, opts[0]
                 );
                 if (choice != null) {
                     ThemeManager.applyTheme(
-                            choice.equals("Dark")
+                            choice.equals(I18n.isFrench() ? "Sombre" : "Dark")
                                     ? ThemeManager.Theme.DARK
                                     : ThemeManager.Theme.LIGHT
                     );
-                    PreferencesManager.saveThemeChoice(choice);
+                    PreferencesManager.saveThemeChoice(
+                            choice.equals(I18n.isFrench() ? "Sombre" : "Dark") ? "Dark" : "Light");
                 }
                 return;
+
+            case "Language":
+                content.setVisible(false);
+                JLabel languageLabel = new JLabel(I18n.t("Choose language:"));
+                languageLabel.setBounds(20, 90, 300, 35);
+                contentPanel.add(languageLabel);
+                JButton englishButton = new JButton("English");
+                englishButton.setBounds(170, 155, 150, 45);
+                JButton frenchButton = new JButton("Français");
+                frenchButton.setBounds(390, 155, 150, 45);
+                englishButton.addActionListener(e -> changeLanguage(I18n.ENGLISH));
+                frenchButton.addActionListener(e -> changeLanguage(I18n.FRENCH));
+                contentPanel.add(englishButton);
+                contentPanel.add(frenchButton);
+                break;
 
             case "Sound & Effects":
                 content.setVisible(false);
 
                 // Checkbox for Background Music
-                JCheckBox backgroundMusicCheckBox = new JCheckBox("Background Music");
+                JCheckBox backgroundMusicCheckBox = new JCheckBox(I18n.t("Background Music"));
                 backgroundMusicCheckBox.setForeground(new Color(195, 88, 41));
                 backgroundMusicCheckBox.setSelected(SoundManager.isBackgroundMusicEnabled());
                 backgroundMusicCheckBox.addActionListener(e -> {
@@ -400,7 +433,7 @@ public class Settings  {
                 contentPanel.add(backgroundMusicCheckBox);
 
                 // Checkbox for Effects Sounds
-                JCheckBox effectsCheckBox = new JCheckBox("Effects Sounds");
+                JCheckBox effectsCheckBox = new JCheckBox(I18n.t("Effects Sounds"));
                 effectsCheckBox.setForeground(new Color(195, 88, 41));
                 effectsCheckBox.setSelected(SoundManager.isEffectsEnabled());
                 effectsCheckBox.addActionListener(e -> {
@@ -415,11 +448,38 @@ public class Settings  {
                 content.setVisible(false);
 
                 // 2) Create a brand-new JTextArea for credits
-                String creditsText =
+                String creditsText = I18n.isFrench()
+                        ? "Aishatek Typing Suite – Version 1.0 (avril 2025)\n\n" +
+                          "■ Direction du projet\n" +
+                          "  • Nabil – Développement principal et architecture technique\n" +
+                          "  • Nassirou – Direction graphique et expérience utilisateur\n\n" +
+                          "■ Équipe de développement\n" +
+                          "  • Nabil – Moteur Java Swing, base de données et persistance\n" +
+                          "  • Nassirou – Ressources visuelles, mise en page et thèmes\n\n" +
+                          "■ Design et expérience utilisateur\n" +
+                          "  • Nassirou – Parcours, typographie et iconographie\n" +
+                          "  • Designer invité – Logo et identité visuelle\n\n" +
+                          "■ Musique et effets\n" +
+                          "  • Carefree – Kevin MacLeod (incompetech.com), licence Creative Commons Attribution 3.0\n" +
+                          "  • On & On (feat. Daniel Levi) – Cartoon & Jéja (NoCopyrightSounds)\n" +
+                          "  • Bad Karma – Axel Thesleff\n" +
+                          "  • 8 Bit Adventure – AdhesiveWombat\n" +
+                          "  • Blue (KNY Factory Remix) – Eiffel 65\n" +
+                          "  • Stressed Out (Tomsize Remix) – Twenty One Pilots / Tomsize\n\n" +
+                          "■ Assurance qualité\n" +
+                          "  • Testeurs de la communauté – Signalement de bugs et retours d’utilisation\n" +
+                          "  • Tests automatisés – Validation des fonctionnalités principales\n\n" +
+                          "■ Remerciements\n" +
+                          "  • SQLite et son pilote JDBC\n" +
+                          "  • Tous les contributeurs open source\n" +
+                          "  • Nos familles et amis pour leur soutien\n\n" +
+                          "© 2025 Aishatek. Tous droits réservés.\n" +
+                          "Contact : contact@aishatek.com"
+                        :
                         "Aishatek Typing Suite – Version 1.0 (April 2025)\n\n" +
                                 "■ Project Leadership\n" +
                                 "  • Nabil – Lead Developer & Technical Architect\n" +
-                                "  • Nassirou – Product Owner & UI/UX Design Lead\n\n" +
+                                "  • Nassirou – Graphic & UI/UX Design Lead\n\n" +
                                 "■ Development Team\n" +
                                 "  • Nabil – Core Java Swing Engine, Database & Persistence\n" +
                                 "  • Nassirou – Visual Assets, Layouts & Theming\n\n" +
@@ -450,9 +510,16 @@ public class Settings  {
                 creditsArea.setLineWrap(true);
                 creditsArea.setWrapStyleWord(true);
 
+                JPanel portraits = new JPanel(new FlowLayout(FlowLayout.CENTER, 28, 4));
+                portraits.setBounds(10, 75, 745, 112);
+                portraits.setOpaque(false);
+                portraits.add(creditPortrait("Nabil", "main/resources/Images/Nabil.jpeg"));
+                portraits.add(creditPortrait("Nassirou", "main/resources/Images/Nassirou.jpeg"));
+                contentPanel.add(portraits);
+
                 // 3) Wrap the new area in its own scroll pane
                 JScrollPane creditsScroll = new JScrollPane(creditsArea);
-                creditsScroll.setBounds(10, 80, 755, 360);
+                creditsScroll.setBounds(10, 190, 745, 220);
                 creditsScroll.setVerticalScrollBarPolicy(
                         JScrollPane.VERTICAL_SCROLLBAR_ALWAYS
                 );
@@ -466,7 +533,19 @@ public class Settings  {
                 content.setVisible(false);
 
                 // 1) FAQ HTML in a JEditorPane
-                String faqHtml = """
+                String faqHtml = I18n.isFrench() ? """
+      <html>
+       <h1 style="color:#C3582A;">Aide et assistance</h1>
+       <h3>Q1 : Comment réinitialiser mes statistiques ?</h3>
+       <p>Supprimez votre compte dans <b>Profil</b>, puis créez-en un nouveau.</p>
+       <h3>Q2 : Puis-je changer de thème pendant une partie ?</h3>
+       <p>Le thème s’applique immédiatement. Modifiez-le dans <b>Thèmes</b>.</p>
+       <h3>Q3 : Quelles nouveautés sont prévues ?</h3>
+       <p>Le mode Niveau supérieur, de nouveaux mini-jeux et davantage de statistiques.</p>
+       <h3>Q4 : Comment signaler un bug ?</h3>
+       <p>Utilisez le bouton ci-dessous pour nous envoyer un rapport détaillé.</p>
+      </html>
+    """ : """
       <html>
        <h1 style="color:#C3582A;">Help & Support</h1>
        <h3>Q1: How do I reset my statistics?</h3>
@@ -498,7 +577,7 @@ public class Settings  {
                 contentPanel.add(faqScroll);
 
                 // 2) “Send Feedback” button
-                JButton sendBtn = new RoundedButton("Send Feedback");
+                JButton sendBtn = new RoundedButton(I18n.t("Send Feedback"));
                 sendBtn.setFont(new Font("Century Gothic", Font.BOLD, 16));
                 sendBtn.setBackground(new Color(195, 88, 42));
                 sendBtn.setForeground(Color.white);
@@ -513,7 +592,7 @@ public class Settings  {
                     int choices = JOptionPane.showConfirmDialog(
                             contentPanel,
                             new JScrollPane(input),
-                            "Describe your issue or suggestion",
+                            I18n.t("Describe your issue or suggestion"),
                             JOptionPane.OK_CANCEL_OPTION
                     );
                     if (choices == JOptionPane.OK_OPTION) {
@@ -521,8 +600,8 @@ public class Settings  {
                         if (msg.isEmpty()) {
                             JOptionPane.showMessageDialog(
                                     contentPanel,
-                                    "Please enter a message.",
-                                    "No Content",
+                                    I18n.t("Please enter a message."),
+                                    I18n.t("No Content"),
                                     JOptionPane.WARNING_MESSAGE
                             );
                             return;
@@ -538,8 +617,8 @@ public class Settings  {
                                 SwingUtilities.invokeLater(() ->
                                         JOptionPane.showMessageDialog(
                                                 contentPanel,
-                                                "Thank you! Your feedback was sent.",
-                                                "Sent",
+                                                I18n.t("Thank you! Your feedback was sent."),
+                                                I18n.t("Sent"),
                                                 JOptionPane.INFORMATION_MESSAGE
                                         )
                                 );
@@ -548,8 +627,8 @@ public class Settings  {
                                 SwingUtilities.invokeLater(() ->
                                         JOptionPane.showMessageDialog(
                                                 contentPanel,
-                                                "Failed to send feedback:\n" + mex.getMessage(),
-                                                "Mail Error",
+                                                I18n.t("Failed to send feedback:\n") + mex.getMessage(),
+                                                I18n.t("Mail Error"),
                                                 JOptionPane.ERROR_MESSAGE
                                         )
                                 );
@@ -559,7 +638,7 @@ public class Settings  {
                 });
                 contentPanel.add(sendBtn);
 
-                JButton sendButton = new RoundedButton("Report a Problem/Ask a qstn");
+                JButton sendButton = new RoundedButton(I18n.t("Report a Problem/Ask a qstn"));
                 sendButton.setFont(new Font("Century Gothic", Font.BOLD, 16));
                 sendButton.setBackground(new Color(195, 88, 42));
                 sendButton.setForeground(Color.white);
@@ -577,8 +656,8 @@ public class Settings  {
                         ex.printStackTrace();
                         JOptionPane.showMessageDialog(
                                 contentPanel,
-                                "Could not launch email client.\nPlease send to contact@aishatek.com.",
-                                "Error",
+                                I18n.t("Could not launch email client.\nPlease send to contact@aishatek.com."),
+                                I18n.t("Error"),
                                 JOptionPane.ERROR_MESSAGE
                         );
                     }
@@ -587,16 +666,48 @@ public class Settings  {
                 break;
 
             default:
-                contentPanel.add(new JLabel("Coming soon..."));
+                contentPanel.add(new JLabel(I18n.t("Coming soon...")));
         }
         contentPanel.add(content);
 
         mainPanel.add(contentPanel, name);
         cardLayout.show(mainPanel, name);
     }
+
+    private JPanel creditPortrait(String name, String resource) {
+        JPanel portrait = new JPanel(new BorderLayout(4, 4));
+        portrait.setOpaque(false);
+        try {
+            JLabel image = new JLabel(ImageUtils.createScaledIcon(resource, 72, 72, true));
+            image.setHorizontalAlignment(SwingConstants.CENTER);
+            portrait.add(image, BorderLayout.CENTER);
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not load credit portrait: " + resource, e);
+        }
+        JLabel caption = new JLabel(name, SwingConstants.CENTER);
+        caption.setFont(new Font("Century Gothic", Font.BOLD, 13));
+        portrait.add(caption, BorderLayout.SOUTH);
+        return portrait;
+    }
+
+    private void changeLanguage(String language) {
+        I18n.setLanguage(language);
+        frame.dispose();
+        onLanguageChange.run();
+    }
+
+    private static void openHomePage() {
+        SoundManager.stopBackgroundMusic();
+        try {
+            new HomePage();
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not reopen the homepage", e);
+        }
+    }
+
     public static int getUserId(String username) {
         String query = "SELECT id FROM users WHERE username = ?";
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db");
+        try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, username);
             ResultSet rs = pstmt.executeQuery();
@@ -609,7 +720,7 @@ public class Settings  {
 
     public static void deleteUserCompletely(int userId) {
         String[] tables = {"level_up_scores", "endless_scores", "challenge_scores", "vs_clock_scores", "users"};
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db");
+        try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement()) {
 
             conn.setAutoCommit(false);
@@ -628,7 +739,7 @@ public class Settings  {
 
     public static boolean renameUser(int userId, String newUsername) {
         String sql = "UPDATE users SET username = ? WHERE id = ?";
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db");
+        try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, newUsername);
             pstmt.setInt(2, userId);
@@ -652,17 +763,14 @@ public class Settings  {
 
 
     public static void main(String[] args) {
+        I18n.setLanguage(PreferencesManager.loadLanguageChoice());
         ThemeManager.Theme startup =
                 PreferencesManager.loadThemeChoice().equalsIgnoreCase("Dark")
                         ? ThemeManager.Theme.DARK
                         : ThemeManager.Theme.LIGHT;
 
         SwingUtilities.invokeLater(() -> {
-            try {
-                new Settings((Runnable) new HomePage());                 // build Settings UI
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            new Settings(() -> {}, Settings::openHomePage);
             ThemeManager.applyTheme(startup); // immediately repaint & swap
         });
     }

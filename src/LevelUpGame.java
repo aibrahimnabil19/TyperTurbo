@@ -45,10 +45,29 @@ public class LevelUpGame {
             "Failure is not the opposite of success; it's part of success.",
             "What lies behind us and what lies before us are tiny matters compared to what lies within us."
     };
+    private final String[] frenchSpeeches = {
+            "Croyez en vous et en tout ce que vous êtes !",
+            "Le travail acharné triomphe du talent sans effort.",
+            "La réussite n’est jamais définitive et l’échec n’est pas fatal.",
+            "Ne regardez pas l’horloge : avancez comme elle.",
+            "Voyez grand et osez échouer.",
+            "La seule limite à demain est le doute d’aujourd’hui.",
+            "Agissez comme si vos choix comptaient : c’est le cas.",
+            "Gardez le soleil devant vous et les ombres derrière.",
+            "Les occasions ne se présentent pas : créez-les.",
+            "Faites ce que vous pouvez, avec ce que vous avez.",
+            "Si vous pouvez le rêver, vous pouvez le réaliser.",
+            "L’avenir appartient à ceux qui croient en leurs rêves.",
+            "Pour commencer, cessez de parler et passez à l’action.",
+            "N’attendez pas l’occasion : créez-la.",
+            "L’échec fait partie de la réussite.",
+            "Ce qui est en nous compte davantage que le passé et l’avenir."
+    };
 
 
     public LevelUpGame() {
-        JFrame frame = new JFrame("Level Up");
+        if (I18n.isFrench()) speeches = frenchSpeeches;
+        JFrame frame = new JFrame(I18n.t("Level Up"));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 550);
         frame.setLocationRelativeTo(null);
@@ -61,7 +80,7 @@ public class LevelUpGame {
         linePanel.setBackground(Color.BLACK);
         frame.add(linePanel);
 
-        timerLabel = new JLabel("Time: 0s");
+        timerLabel = new JLabel(I18n.t("Time:") + " 0s");
         timerLabel.setFont(new Font("Century Gothic", Font.BOLD, 30));
         timerLabel.setBounds(350, 500, 150, 30);
         frame.add(timerLabel);
@@ -88,6 +107,7 @@ public class LevelUpGame {
     }
     
     public static void main(String[] args) {
+        I18n.setLanguage(PreferencesManager.loadLanguageChoice());
         new LevelUpGame();
     }
 }

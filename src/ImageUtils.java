@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.URL;
 
 /**
  * Robust image utility: reads images, scales with high quality (multi-step),
@@ -15,17 +16,10 @@ public final class ImageUtils {
 
     /** Load an image from file path or classpath resource. */
     public static BufferedImage loadImage(String path) throws IOException {
-        // Try as file first
-        File f = new File(path);
-        if (f.exists()) {
-            return ImageIO.read(f);
+        URL url = AssetResolver.resolveToUrl(path);
+        try (InputStream is = url.openStream()) {
+            return ImageIO.read(is);
         }
-        // Try as resource on the classpath
-        try (InputStream is = ImageUtils.class.getResourceAsStream(path.startsWith("/") ? path : "/" + path)) {
-            if (is != null) return ImageIO.read(is);
-        }
-        // Last attempt: let ImageIO try with URL-like path
-        return ImageIO.read(new File(path));
     }
 
     /**

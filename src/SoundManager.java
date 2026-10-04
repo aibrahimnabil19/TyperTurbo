@@ -44,6 +44,10 @@ public class SoundManager {
     }
 
     public static synchronized void setMusicPlayer(MusicPlayer player) {
+        if (musicPlayer != null && musicPlayer != player) {
+            musicPlayer.stop();
+            cleanupTempFiles();
+        }
         musicPlayer = player;
         if (!backgroundMusicEnabled && musicPlayer != null && musicPlayer.isPlaying()) {
             musicPlayer.stop();
@@ -91,7 +95,13 @@ public class SoundManager {
     public static synchronized void playBackgroundRandom(List<String> songs) {
         if (songs == null || songs.isEmpty()) return;
 
-        lastPlaylist = new ArrayList<>(songs); // remember original list
+        List<String> resolvedSongs = new ArrayList<>();
+        for (String s : songs) {
+            if (s == null) continue;
+            resolvedSongs.add(AssetResolver.resolve(s));
+        }
+
+        lastPlaylist = new ArrayList<>(resolvedSongs); // remember original list
         // Respect toggle
         if (!backgroundMusicEnabled) return;
 
@@ -101,7 +111,7 @@ public class SoundManager {
         List<String> playablePaths = new ArrayList<>();
         List<File> tempFiles = new ArrayList<>();
 
-        for (String s : songs) {
+        for (String s : resolvedSongs) {
             if (s == null) continue;
             if (isClasspathResource(s)) {
                 try {
@@ -169,8 +179,10 @@ public class SoundManager {
         if (!effectsEnabled) return;
         if (pathOrResource == null) return;
 
+        String resolvedPath = AssetResolver.resolve(pathOrResource);
+
         // If MP3 -> not supported by javax.sound.sampled for effects
-        String ext = getExtension(pathOrResource).toLowerCase();
+        String ext = getExtension(resolvedPath).toLowerCase();
         if ("mp3".equals(ext)) {
             System.err.println("SoundManager: MP3 for effects is not supported by javax.sound.sampled. Use WAV or JavaFX for MP3.");
             return;
@@ -180,19 +192,15 @@ public class SoundManager {
         new Thread(() -> {
             AudioInputStream ais = null;
             try {
-                if (isClasspathResource(pathOrResource)) {
-                    InputStream ris = SoundManager.class.getResourceAsStream(pathOrResource);
-                    if (ris == null) {
-                        System.err.println("SoundManager: resource not found: " + pathOrResource);
-                        return;
-                    }
+                if (isClasspathResource(resolvedPath)) {
+                    InputStream ris = AssetResolver.openResourceStream(resolvedPath);
                     // wrap to support mark/reset used by AudioSystem
                     BufferedInputStream bis = new BufferedInputStream(ris);
                     ais = AudioSystem.getAudioInputStream(bis);
                 } else {
-                    File file = new File(pathOrResource);
+                    File file = new File(resolvedPath);
                     if (!file.exists()) {
-                        System.err.println("SoundManager: effect file not found: " + pathOrResource);
+                        System.err.println("SoundManager: effect file not found: " + resolvedPath);
                         return;
                     }
                     ais = AudioSystem.getAudioInputStream(file);
@@ -225,7 +233,15 @@ public class SoundManager {
     }
 
     private static boolean isClasspathResource(String path) {
-        return path != null && path.startsWith("/");
+        if (path == null) return false;
+        String normalized = path.trim().replace('\\', '/');
+        return normalized.startsWith("/")
+                || normalized.startsWith("main/resources/")
+                || normalized.startsWith("Audio/")
+                || normalized.startsWith("Images/")
+                || normalized.contains("/main/resources/")
+                || normalized.contains("/Audio/")
+                || normalized.contains("/Images/");
     }
 
     private static String getExtension(String path) {
@@ -240,27 +256,25 @@ public class SoundManager {
      */
     private static File copyResourceToTempFile(String resourcePath) throws IOException {
         if (!isClasspathResource(resourcePath)) return null;
-        String ext = getExtension(resourcePath);
+        String normalized = resourcePath.trim().replace('\\', '/');
+        String ext = getExtension(normalized);
         if (ext.isEmpty()) ext = "tmp";
-        // create temp file
         File tmp = Files.createTempFile("sound-", "." + ext).toFile();
         tmp.deleteOnExit();
 
-        try (InputStream ris = SoundManager.class.getResourceAsStream(resourcePath)) {
-            if (ris == null) {
-                tmp.delete();
-                return null;
+        try (InputStream ris = AssetResolver.openResourceStream(normalized);
+             OutputStream os = new FileOutputStream(tmp)) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = ris.read(buffer)) != -1) {
+                os.write(buffer, 0, read);
             }
-            try (OutputStream os = new FileOutputStream(tmp)) {
-                byte[] buffer = new byte[8192];
-                int read;
-                while ((read = ris.read(buffer)) != -1) {
-                    os.write(buffer, 0, read);
-                }
-                os.flush();
-            }
+            os.flush();
+            return tmp;
+        } catch (IOException e) {
+            tmp.delete();
+            throw e;
         }
-        return tmp;
     }
 
     /**

@@ -26,10 +26,43 @@ public class Gamemode extends JPanel{
     private boolean infoEnabled = false;
     private MusicPlayer musicPlayer = new MusicPlayer();
     private java.util.List<String> gamemodeSongs = List.of(
-            "C:\\Users\\User\\Documents\\untitled\\src\\Audio\\AdhesiveWombat - 8 Bit Adventure.mp3"
+            "main/resources/Audio/AdhesiveWombat - 8 Bit Adventure.mp3"
     );
+
+    private static ImageIcon assetIcon(String path) {
+        try {
+            return new ImageIcon(ImageUtils.loadImage(AssetResolver.resolve(path)));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load asset: " + path, e);
+        }
+    }
+
+    private JLabel createModeLabel(String text, int iconX) {
+        JLabel label = new JLabel("", SwingConstants.CENTER);
+        label.setFont(new Font("Century Gothic", Font.BOLD, 20));
+        FontMetrics metrics = label.getFontMetrics(label.getFont());
+        StringBuilder wrapped = new StringBuilder("<html><center>");
+        StringBuilder line = new StringBuilder();
+        for (String word : text.split(" ")) {
+            for (String part : word.split("(?<=-)")) {
+                String separator = line.length() == 0 || line.charAt(line.length() - 1) == '-' ? "" : " ";
+                String candidate = line + separator + part;
+                if (line.length() > 0 && metrics.stringWidth(candidate) > 126) {
+                    wrapped.append(line).append("<br>");
+                    line.setLength(0);
+                    separator = "";
+                }
+                line.append(separator).append(part);
+            }
+        }
+        wrapped.append(line).append("</center></html>");
+        label.setText(wrapped.toString());
+        label.setBounds(iconX, 310, 130, 58);
+        label.setForeground(new Color(195, 88, 41));
+        return label;
+    }
     Gamemode() throws IOException {
-        frame = new JFrame("GAMEMODE");
+        frame = new JFrame(I18n.t("GAMEMODE"));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 550);
         frame.setLocationRelativeTo(null);
@@ -44,11 +77,11 @@ public class Gamemode extends JPanel{
         }
 //        frame.setUndecorated(true);
 //        frame.getContentPane().setBackground(new Color(240, 224, 208));
-//        frame.setContentPane(new BackgroundPanel("C:\\Users\\User\\Documents\\untitled\\src\\Images\\GAME MODE B EN.jpg"));
+//        frame.setContentPane(new BackgroundPanel("main/resources/Images/GAME MODE B EN.jpg"));
 
         SoundManager.setMusicPlayer(musicPlayer);
         playSound();
-        JLabel gameMode = new JLabel("GAMEMODE");
+        JLabel gameMode = new JLabel(I18n.t("GAMEMODE"));
         gameMode.setBounds(164, 74, 600, 100);
         gameMode.setFont(new Font("Century Gothic", Font.BOLD,78));
         gameMode.setForeground(new Color(195,88,41));
@@ -94,8 +127,8 @@ public class Gamemode extends JPanel{
         game8Panel.setLayout(null);
         frame.add(game8Panel);
 
-        ImageIcon settingsImg = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\settings.png", 27, 27,true);
-        ImageIcon settingsHover = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\settings 2.png", 27, 27,true);
+        ImageIcon settingsImg = ImageUtils.createScaledIcon("main/resources/Images/settings.png", 27, 27,true);
+        ImageIcon settingsHover = ImageUtils.createScaledIcon("main/resources/Images/settings 2.png", 27, 27,true);
         JButton settingslbl = new JButton(settingsImg);
         settingslbl.setBounds(740,19,27,27);
         settingslbl.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -104,11 +137,18 @@ public class Gamemode extends JPanel{
         settingslbl.setBorderPainted(false);  // Remove border paint
         settingslbl.setRolloverIcon(settingsHover);
         settingslbl.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             new Settings(() -> {
-                SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
-                // for example: re-show the HomePage
+                SoundManager.playEffect("main/resources/Audio/Click.WAV");
                 frame.setVisible(true);
+            }, () -> {
+                SoundManager.stopBackgroundMusic();
+                frame.dispose();
+                try {
+                    new Gamemode();
+                } catch (IOException ex) {
+                    throw new IllegalStateException("Could not reopen game modes", ex);
+                }
             });
             ThemeManager.applyTheme(ThemeManager.getCurrentTheme());
         });
@@ -206,7 +246,7 @@ public class Gamemode extends JPanel{
         homeBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+                SoundManager.playEffect("main/resources/Audio/Click.WAV");
                 SoundManager.stopBackgroundMusic();
                 try {
                     new HomePage();
@@ -222,8 +262,8 @@ public class Gamemode extends JPanel{
         int mWidth = ImageUtils.cmToPx(1.13);
         int mLength = ImageUtils.cmToPx(1.13);
 
-        ImageIcon levelUp = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Level Up.png", 130, 130,true);
-        ImageIcon levelUpHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Level Up Hover.png", 130, 130,true);
+        ImageIcon levelUp = ImageUtils.createScaledIcon("main/resources/Images/Level Up.png", 130, 130,true);
+        ImageIcon levelUpHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/Level Up Hover.png", 130, 130,true);
         int lx = ImageUtils.cmToPx(0.5);
         int ly = ImageUtils.cmToPx(1.76);
         levelUpbtn = new JButton(levelUp);
@@ -233,10 +273,8 @@ public class Gamemode extends JPanel{
         levelUpbtn.setFocusPainted(false);  // Remove focus border on click
         levelUpbtn.setBorderPainted(false);  // Remove border paint
         levelUpbtn.setRolloverIcon(levelUpHoverbtn);
-        levelUplbl = new JLabel("Level Up");
+        levelUplbl = createModeLabel(I18n.t("Level Up"), 595);
         levelUpbtn.setEnabled(false);
-        levelUplbl.setFont(new Font("Century Gothic",Font.BOLD,20));
-        levelUplbl.setBounds(ImageUtils.lblX(595,130,81), 315, 81, 50);
         levelUplbl.setForeground(Color.lightGray);
         frame.add(levelUplbl);
         JLabel comingSoon = new JLabel(".  .  .");
@@ -267,7 +305,7 @@ public class Gamemode extends JPanel{
                 challengebtn.setVisible(true);
 
                 // Create & display the "clicked" label for Level Up
-                ImageIcon levelUpClickbtn = new ImageIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Level Up Click.png");
+                ImageIcon levelUpClickbtn = assetIcon("main/resources/Images/Level Up Click.png");
                 Image img = levelUpClickbtn.getImage();
                 Image resizedImg = img.getScaledInstance(130,130,Image.SCALE_SMOOTH);
                 ImageIcon resLevelUp = new ImageIcon(resizedImg);
@@ -285,8 +323,8 @@ public class Gamemode extends JPanel{
             }
         });
 
-        ImageIcon clock = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Clock.png", 130,130,true);
-        ImageIcon clockHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Clock Hover.png", 130,130,true);
+        ImageIcon clock = ImageUtils.createScaledIcon("main/resources/Images/Clock.png", 130,130,true);
+        ImageIcon clockHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/Clock Hover.png", 130,130,true);
         clockbtn = new JButton(clock);
         clockbtn.setBounds(245,195,130,130);
         clockbtn.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -294,15 +332,12 @@ public class Gamemode extends JPanel{
         clockbtn.setFocusPainted(false);  // Remove focus border on click
         clockbtn.setBorderPainted(false);  // Remove border paint
         clockbtn.setRolloverIcon(clockHoverbtn);
-        clocklbl = new JLabel("Clock");
-        clocklbl.setFont(new Font("Century Gothic",Font.BOLD,20));
-        clocklbl.setBounds(ImageUtils.lblX(245,130,57), 315, 57, 50);
-        clocklbl.setForeground(new Color(195,88,41));
+        clocklbl = createModeLabel(I18n.t("Clock"), 245);
         frame.add(clocklbl);
         clockbtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+                SoundManager.playEffect("main/resources/Audio/Click.WAV");
                 ThemeManager.applyTheme(ThemeManager.getCurrentTheme());
                 hideSecEndless();
                 hideSecChallenge();
@@ -327,7 +362,7 @@ public class Gamemode extends JPanel{
                 challengebtn.setVisible(true);
 
                 // Create & display the "clicked" label for Level Up
-                ImageIcon levelUpClickbtn = new ImageIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Clock Click.png");
+                ImageIcon levelUpClickbtn = assetIcon("main/resources/Images/Clock Click.png");
                 Image img = levelUpClickbtn.getImage();
                 Image resizedImg = img.getScaledInstance(130, 130, Image.SCALE_SMOOTH);
                 ImageIcon resLevelUp = new ImageIcon(resizedImg);
@@ -345,8 +380,8 @@ public class Gamemode extends JPanel{
             }
         });
 
-        ImageIcon Endless = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Endless.png", 130,130,true);
-        ImageIcon EndlessHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Endless Hover.png", 130,130,true);
+        ImageIcon Endless = ImageUtils.createScaledIcon("main/resources/Images/Endless.png", 130,130,true);
+        ImageIcon EndlessHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/Endless Hover.png", 130,130,true);
         Endlessbtn = new JButton(Endless);
         Endlessbtn.setBounds(70,195,130,130);
         Endlessbtn.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -354,15 +389,12 @@ public class Gamemode extends JPanel{
         Endlessbtn.setFocusPainted(false);  // Remove focus border on click
         Endlessbtn.setBorderPainted(false);  // Remove border paint
         Endlessbtn.setRolloverIcon(EndlessHoverbtn);
-        endlesslbl = new JLabel("Endless");
-        endlesslbl.setFont(new Font("Century Gothic",Font.BOLD,20));
-        endlesslbl.setBounds(ImageUtils.lblX(70,130,71), 315, 71, 50);
-        endlesslbl.setForeground(new Color(195,88,41));
+        endlesslbl = createModeLabel(I18n.t("Endless"), 70);
         frame.add(endlesslbl);
         Endlessbtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+                SoundManager.playEffect("main/resources/Audio/Click.WAV");
                 ThemeManager.applyTheme(ThemeManager.getCurrentTheme());
                 hideSecAction();
                 hideSecChallenge();
@@ -388,7 +420,7 @@ public class Gamemode extends JPanel{
                 challengebtn.setVisible(true);
 
                 // Create & display the "clicked" label for Level Up
-                ImageIcon levelUpClickbtn = new ImageIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\Endless Click.png");
+                ImageIcon levelUpClickbtn = assetIcon("main/resources/Images/Endless Click.png");
                 Image img = levelUpClickbtn.getImage();
                 Image resizedImg = img.getScaledInstance(130, 130, Image.SCALE_SMOOTH);
                 ImageIcon resLevelUp = new ImageIcon(resizedImg);
@@ -405,8 +437,8 @@ public class Gamemode extends JPanel{
             }
         });
 
-        ImageIcon challenge = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\challenge.png", 130,130,true);
-        ImageIcon challengeHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\challenge Hover.png", 130,130,true);
+        ImageIcon challenge = ImageUtils.createScaledIcon("main/resources/Images/challenge.png", 130,130,true);
+        ImageIcon challengeHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/challenge Hover.png", 130,130,true);
         challengebtn = new JButton(challenge);
         challengebtn.setBounds(420,195,130,130);
         challengebtn.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -414,15 +446,12 @@ public class Gamemode extends JPanel{
         challengebtn.setFocusPainted(false);  // Remove focus border on click
         challengebtn.setBorderPainted(false);  // Remove border paint
         challengebtn.setRolloverIcon(challengeHoverbtn);
-        challengelbl = new JLabel("Challenge");
-        challengelbl.setFont(new Font("Century Gothic",Font.BOLD,20));
-        challengelbl.setBounds(ImageUtils.lblX(420,130,101), 315, 101, 50);
-        challengelbl.setForeground(new Color(195,88,41));
+        challengelbl = createModeLabel(I18n.t("Challenge"), 420);
         frame.add(challengelbl);
         challengebtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+                SoundManager.playEffect("main/resources/Audio/Click.WAV");
                 ThemeManager.applyTheme(ThemeManager.getCurrentTheme());
                 hideSecAction();
                 hideSecEndless();
@@ -446,7 +475,7 @@ public class Gamemode extends JPanel{
                 Endlessbtn.setVisible(true);
 
                 // Create & display the "clicked" label for Level Up
-                ImageIcon levelUpClickbtn = new ImageIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\challenge Click.png");
+                ImageIcon levelUpClickbtn = assetIcon("main/resources/Images/challenge Click.png");
                 Image img = levelUpClickbtn.getImage();
                 Image resizedImg = img.getScaledInstance(130, 130, Image.SCALE_SMOOTH);
                 ImageIcon resLevelUp = new ImageIcon(resizedImg);
@@ -484,15 +513,15 @@ public class Gamemode extends JPanel{
         secPanel.setOpaque(false); // Make background transparent
 
         // Create images
-        ImageIcon sixtyClickedbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\60s.png", 65, 29,true);
-        ImageIcon sixty120 = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\60s-1.png", 53, 24,true);
-        ImageIcon sixty180 = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\60s copie 2.png", 42, 19,true);
-        ImageIcon one20S = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\120s copie 3.png", 53, 24,true);
-        ImageIcon one20Clickedbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\120s.png", 65, 29,true);
-        ImageIcon one20180btn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\120s copie 3.png", 53, 24,true);
-        ImageIcon one8S = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\180s-2.png", 42, 19,true);
-        ImageIcon one8120btn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\180s-1.png", 53, 24,true);
-        ImageIcon one8Clickedbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\180s.png", 65, 29,true);
+        ImageIcon sixtyClickedbtn = ImageUtils.createScaledIcon("main/resources/Images/60s.png", 65, 29,true);
+        ImageIcon sixty120 = ImageUtils.createScaledIcon("main/resources/Images/60s-1.png", 53, 24,true);
+        ImageIcon sixty180 = ImageUtils.createScaledIcon("main/resources/Images/60s copie 2.png", 42, 19,true);
+        ImageIcon one20S = ImageUtils.createScaledIcon("main/resources/Images/120s copie 3.png", 53, 24,true);
+        ImageIcon one20Clickedbtn = ImageUtils.createScaledIcon("main/resources/Images/120s.png", 65, 29,true);
+        ImageIcon one20180btn = ImageUtils.createScaledIcon("main/resources/Images/120s copie 3.png", 53, 24,true);
+        ImageIcon one8S = ImageUtils.createScaledIcon("main/resources/Images/180s-2.png", 42, 19,true);
+        ImageIcon one8120btn = ImageUtils.createScaledIcon("main/resources/Images/180s-1.png", 53, 24,true);
+        ImageIcon one8Clickedbtn = ImageUtils.createScaledIcon("main/resources/Images/180s.png", 65, 29,true);
 
         // Create buttons
         sixtySbtn = createButton(sixtyClickedbtn.getImage(), 65, 29, ImageUtils.lblX(245, 130, 65), 330);
@@ -529,7 +558,7 @@ public class Gamemode extends JPanel{
         });
 
         one8Sbtn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             // Hide all buttons
             sixtySbtn.setVisible(false);
             sixty120btn.setVisible(false);
@@ -545,7 +574,7 @@ public class Gamemode extends JPanel{
             refreshHighScore();
         });
         sixty120btn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             // Hide all buttons
             sixty120btn.setVisible(false);
             sixty180btn.setVisible(false);
@@ -561,7 +590,7 @@ public class Gamemode extends JPanel{
             refreshHighScore();
         });
         one8120Sbtn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             // Hide all buttons
             sixtySbtn.setVisible(false);
             sixty120btn.setVisible(false);
@@ -577,7 +606,7 @@ public class Gamemode extends JPanel{
             refreshHighScore();
         });
         one20180Sbtn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             // Hide all buttons
             sixtySbtn.setVisible(false);
             sixty180btn.setVisible(false);
@@ -593,7 +622,7 @@ public class Gamemode extends JPanel{
             refreshHighScore();
         });
         sixty180btn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             // Hide all buttons
             sixty120btn.setVisible(false);
             sixty180btn.setVisible(false);
@@ -609,12 +638,14 @@ public class Gamemode extends JPanel{
             refreshHighScore();
         });
 
-        JLabel difficulty1 = new JLabel("Select your difficulty:");
+        JLabel difficulty1 = new JLabel(I18n.t("Select your difficulty:"));
         difficulty1.setFont(new Font("Century Gothic", Font.BOLD,15));
         difficulty1.setForeground(new Color(195, 88, 41));
         difficulty1.setBounds(10,465,250,30);
 
-        String[] options = {"Easy", "Intermediate", "Hard", "Pro"};
+        String[] options = I18n.isFrench()
+                ? new String[]{"Facile", "Intermédiaire", "Difficile", "Expert"}
+                : new String[]{"Easy", "Intermediate", "Hard", "Pro"};
         dropdown = new JComboBox<>(options);
         dropdown.setBounds(180, 465, 150, 30);
         dropdown.setFont(new Font("Century Gothic", Font.PLAIN, 14));
@@ -635,19 +666,24 @@ public class Gamemode extends JPanel{
         });
         dropdown.addActionListener(e -> refreshHighScore());
 
-        ImageIcon play = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\play.jpg", 260, 65,true);
-        ImageIcon playHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\play Hover.jpg", 260, 65,true);
-        playbtn = new JButton(play);
+        ImageIcon play = ImageUtils.createScaledIcon("main/resources/Images/play.jpg", 260, 65,true);
+        ImageIcon playHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/play Hover.jpg", 260, 65,true);
+        playbtn = I18n.isFrench() ? new JButton("JOUER") : new JButton(play);
+        if (I18n.isFrench()) {
+            playbtn.setFont(new Font("Century Gothic", Font.BOLD, 24));
+            playbtn.setForeground(Color.WHITE);
+            playbtn.setBackground(new Color(195, 88, 42));
+            playbtn.setOpaque(true);
+        } else {
+            playbtn.setRolloverIcon(playHoverbtn);
+        }
         playbtn.setBounds(530, 448, 260, 65);
         playbtn.setBorder(BorderFactory.createEmptyBorder());  // Remove border
-        playbtn.setContentAreaFilled(false);  // Make the background transparent
+        playbtn.setContentAreaFilled(I18n.isFrench());
         playbtn.setFocusPainted(false);  // Remove focus border on click
         playbtn.setBorderPainted(false);  // Remove border paint
-        playbtn.setRolloverIcon(playHoverbtn);
 //        HomePage homePage = new HomePage();
         String username = HomePage.getSelectedUsername();
-        String difficulty = (String) dropdown.getSelectedItem(); // Get selected difficulty
-
         // Get time based on selected button
         String timeLimit;
         if (sixtySbtn.isVisible()) {
@@ -660,10 +696,11 @@ public class Gamemode extends JPanel{
             timeLimit = "";
         }
         playbtn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             SoundManager.stopBackgroundMusic();
             try {
-                vsClock.openGameFrame(difficulty, timeLimit,username);
+                String selectedDifficulty = I18n.toEnglishDifficulty((String) dropdown.getSelectedItem());
+                vsClock.openGameFrame(selectedDifficulty, timeLimit,username);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
@@ -706,15 +743,22 @@ public class Gamemode extends JPanel{
         secPanel.setBounds(0, 0, frame.getWidth(), frame.getHeight()); // Set to match frame size
         secPanel.setOpaque(false); // Make background transparent
 
-        ImageIcon play = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\play.jpg", 260, 65,true);
-        ImageIcon playHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\play Hover.jpg", 260, 65,true);
-        playbtn = new JButton(play);
+        ImageIcon play = ImageUtils.createScaledIcon("main/resources/Images/play.jpg", 260, 65,true);
+        ImageIcon playHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/play Hover.jpg", 260, 65,true);
+        playbtn = I18n.isFrench() ? new JButton("JOUER") : new JButton(play);
+        if (I18n.isFrench()) {
+            playbtn.setFont(new Font("Century Gothic", Font.BOLD, 24));
+            playbtn.setForeground(Color.WHITE);
+            playbtn.setBackground(new Color(195, 88, 42));
+            playbtn.setOpaque(true);
+        } else {
+            playbtn.setRolloverIcon(playHoverbtn);
+        }
         playbtn.setBounds(530, 448, 260, 65);
         playbtn.setBorder(BorderFactory.createEmptyBorder());  // Remove border
-        playbtn.setContentAreaFilled(false);  // Make the background transparent
+        playbtn.setContentAreaFilled(I18n.isFrench());
         playbtn.setFocusPainted(false);  // Remove focus border on click
         playbtn.setBorderPainted(false);  // Remove border paint
-        playbtn.setRolloverIcon(playHoverbtn);
         String username = HomePage.getSelectedUsername();
         String result = getEndlessHighScore(username);
         JLabel highScorelbl = new JLabel(result);
@@ -722,7 +766,7 @@ public class Gamemode extends JPanel{
         highScorelbl.setFont(new Font("Century Gothic",Font.BOLD,15));
         highScorelbl.setForeground(new Color(195, 88, 41));
         playbtn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             SoundManager.stopBackgroundMusic();
             try {
                 new Endless(username);
@@ -750,15 +794,22 @@ public class Gamemode extends JPanel{
         secPanel.setBounds(0, 0, frame.getWidth(), frame.getHeight()); // Set to match frame size
         secPanel.setOpaque(false); // Make background transparent
 
-        ImageIcon play = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\play.jpg", 260, 65,true);
-        ImageIcon playHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\play Hover.jpg", 260, 65,true);
-        playbtn = new JButton(play);
+        ImageIcon play = ImageUtils.createScaledIcon("main/resources/Images/play.jpg", 260, 65,true);
+        ImageIcon playHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/play Hover.jpg", 260, 65,true);
+        playbtn = I18n.isFrench() ? new JButton("JOUER") : new JButton(play);
+        if (I18n.isFrench()) {
+            playbtn.setFont(new Font("Century Gothic", Font.BOLD, 24));
+            playbtn.setForeground(Color.WHITE);
+            playbtn.setBackground(new Color(195, 88, 42));
+            playbtn.setOpaque(true);
+        } else {
+            playbtn.setRolloverIcon(playHoverbtn);
+        }
         playbtn.setBounds(530, 448, 260, 65);
         playbtn.setBorder(BorderFactory.createEmptyBorder());  // Remove border
-        playbtn.setContentAreaFilled(false);  // Make the background transparent
+        playbtn.setContentAreaFilled(I18n.isFrench());
         playbtn.setFocusPainted(false);  // Remove focus border on click
         playbtn.setBorderPainted(false);  // Remove border paint
-        playbtn.setRolloverIcon(playHoverbtn);
         String username = HomePage.getSelectedUsername(); // Incase there is a need for the username in the future
 //        String result = getEndlessHighScore(username);
 //        JLabel highScorelbl = new JLabel(result);
@@ -766,7 +817,7 @@ public class Gamemode extends JPanel{
 //        highScorelbl.setFont(new Font("Century Gothic",Font.BOLD,15));
 //        highScorelbl.setForeground(new Color(195, 88, 42));
         playbtn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             SoundManager.stopBackgroundMusic();
             new ChallengeMode();
             frame.dispose();
@@ -832,7 +883,7 @@ public class Gamemode extends JPanel{
         return new ImageIcon(image);
     }
     public static String getClockHighScore(String username, String difficulty, String timeLimit) {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db")) {
+        try (Connection conn = DBUtil.getConnection()) {
             PreparedStatement stmt = conn.prepareStatement("""
             SELECT MAX(v.score) AS high_score
             FROM vs_clock_scores v
@@ -846,16 +897,16 @@ public class Gamemode extends JPanel{
 
             if (rs.next() && rs.getInt("high_score") > 0) {
                 int score = rs.getInt("high_score");
-                return "High Score: " + score;
+                return I18n.t("High Score:") + " " + score;
             } else {
-                return "High Score: 0";
+                return I18n.t("High Score:") + " 0";
             }
         } catch (SQLException ex) {
-            return "Error retrieving score: " + ex.getMessage();
+            return I18n.t("Error retrieving score:") + " " + ex.getMessage();
         }
     }
     public static String getEndlessHighScore(String username) {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db")) {
+        try (Connection conn = DBUtil.getConnection()) {
             PreparedStatement stmt = conn.prepareStatement("""
             SELECT MAX(v.score) AS high_score
             FROM endless_scores v
@@ -867,18 +918,18 @@ public class Gamemode extends JPanel{
 
             if (rs.next() && rs.getInt("high_score") > 0) {
                 int score = rs.getInt("high_score");
-                return "High Score: " + score;
+                return I18n.t("High Score:") + " " + score;
             } else {
-                return "High Score: 0";
+                return I18n.t("High Score:") + " 0";
             }
         } catch (SQLException ex) {
-            return "Error retrieving score: " + ex.getMessage();
+            return I18n.t("Error retrieving score:") + " " + ex.getMessage();
         }
     }
 
     private void refreshHighScore() {
         String username   = HomePage.getSelectedUsername();
-        String difficulty = (String) dropdown.getSelectedItem();
+        String difficulty = I18n.toEnglishDifficulty((String) dropdown.getSelectedItem());
 
         String timeLimit;
         if      (sixtySbtn.isVisible())     timeLimit = "60";
@@ -895,6 +946,7 @@ public class Gamemode extends JPanel{
     }
 
     public static void main(String[] args) {
+        I18n.setLanguage(PreferencesManager.loadLanguageChoice());
         // figure out Dark vs Light
         ThemeManager.Theme startup =
                 PreferencesManager.loadThemeChoice().equalsIgnoreCase("Dark")

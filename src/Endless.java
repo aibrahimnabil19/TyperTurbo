@@ -1,4 +1,3 @@
-import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -8,7 +7,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.Random;
@@ -20,9 +18,10 @@ public class Endless {
     private Timer timer;
     private int xPosition, elapsedTime, score = 0;;
     private double speed = 2.0; // Initial speed
-    private double speedIncrement = 0.5; // Gradual speed increase
+    private double speedIncrement = 0.85;
     private String currentText;
     private Random random;
+    private WordCycle wordCycle;
     int[] index = {0};;
     private int hearts = 3;
     private int level = 1;
@@ -35,13 +34,22 @@ public class Endless {
     private String username;
     static JPanel shadowPanel;
     private MusicPlayer musicPlayer = new MusicPlayer();
+    private String heartImageUrl;
     private java.util.List<String> gamemodeSongs = java.util.List.of(
-            "C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Axel Thesleff - Bad Karma.mp3",
-            "C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Cartoon, Jéja - On & On (feat. Daniel Levi) _ Electronic Pop _ NCS - Copyright F.mp3",
-            "C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Eiffel 65 - Blue (KNY Factory Remix).mp3",
-            "C:\\Users\\User\\Documents\\untitled\\src\\Audio\\The Chainsmokers - Don't Let Me Down (Illenium Remix).mp3",
-            "C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Twenty One Pilots - Stressed Out (Tomsize Remix).mp3"
+            "main/resources/Audio/Axel Thesleff - Bad Karma.mp3",
+            "main/resources/Audio/Cartoon, Jéja - On & On (feat. Daniel Levi) _ Electronic Pop _ NCS - Copyright F.mp3",
+            "main/resources/Audio/Eiffel 65 - Blue (KNY Factory Remix).mp3",
+            "main/resources/Audio/The Chainsmokers - Don't Let Me Down (Illenium Remix).mp3",
+            "main/resources/Audio/Twenty One Pilots - Stressed Out (Tomsize Remix).mp3"
     );
+
+    private static ImageIcon assetIcon(String path) {
+        try {
+            return new ImageIcon(ImageUtils.loadImage(AssetResolver.resolve(path)));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load asset: " + path, e);
+        }
+    }
 
     private String[] speeches = {
             "CAT", "DOG", "SUN", "RED", "BLUE", "FISH", "BOOK", "JUMP", "CHAIR", "TABLE",
@@ -69,11 +77,28 @@ public class Endless {
             "METAMORPHOSIS", "PHENOMENON", "CIRCUMFERENCE", "CATASTROPHE", "BUREAUCRACY", "JUXTAPOSITION", "UNPRECEDENTED", "PARADOXICAL", "SOPHISTICATED", "PERSPECTIVE",
             "CONGLOMERATE", "TRANSCENDENCE", "PSYCHOLOGY", "AMBIDEXTROUS", "CONUNDRUM", "MISCONCEPTION", "EXTRAPOLATE", "ONOMATOPOEIA", "POLYPHONIC", "HALLUCINATION"
     };
+    private final String[] frenchSpeeches = {
+            "CHAT", "CHIEN", "SOLEIL", "ROUGE", "BLEU", "POISSON", "LIVRE", "TABLE", "LUNE", "ÉTOILE",
+            "EAU", "VERT", "MAISON", "MUSIQUE", "ARBRE", "OISEAU", "PAIN", "PLUIE", "NEIGE", "VENT",
+            "SOURIRE", "BALLON", "GÂTEAU", "SABLE", "JOUET", "LAIT", "VOITURE", "STYLO", "CHEMISE", "GANT",
+            "CLOCHE", "CHAUSSURE", "PAPIER", "HORLOGE", "BATEAU", "CHAPEAU", "ROCHER", "PORTE", "CLÉ", "CIEL",
+            "FEUILLE", "HERBE", "GUITARE", "PIANO", "LAMPE", "DRAPEAU", "JUPE", "PIÈCE", "RIVIÈRE", "OCÉAN",
+            "PLAGE", "ÎLE", "TEMPÊTE", "NUAGEUX", "BROUILLARD", "VOYAGE", "ROUTE", "CARTE", "TRAIN", "AVION",
+            "CRAYON", "GOMME", "COULEUR", "LETTRE", "JOURNAL", "ÉCRAN", "RADIO", "MUR", "SOL", "SERRURE",
+            "JARDIN", "HIVER", "COUCHER", "FUSÉE", "PLANÈTE", "PAPILLON", "DIAMANT", "ÉQUILIBRE", "PLUME", "ÉNIGME",
+            "LANTERNE", "BIBLIOTHÈQUE", "TUNNEL", "BOUGIE", "TRÉSOR", "VOYAGE", "OMBRE", "MACHINE", "GLACIER", "ÉLÉPHANT",
+            "CLAVIER", "MONTAGNE", "PARAPLUIE", "VÉLOCITÉ", "TRIANGLE", "MEUBLE", "BICYCLETTE", "STRATÉGIE", "AVALANCHE",
+            "HORIZON", "MICROSCOPE", "SQUELETTE", "PHARE", "AVENTURE", "TÉLESCOPE", "SIGNATURE", "SPECTACLE", "MARATHON",
+            "PHILOSOPHIE", "ENCYCLOPÉDIE", "SILHOUETTE", "HYPOTHÈSE", "QUARANTAINE", "ASTRONOMIE", "ARCHITECTURE",
+            "VOCABULAIRE", "CONSÉQUENCE", "MÉTAMORPHOSE", "PHÉNOMÈNE", "CIRCONFÉRENCE", "CATASTROPHE", "BUREAUCRATIE",
+            "JUXTAPOSITION", "INÉDIT", "PARADOXAL", "SOPHISTIQUÉ", "PERSPECTIVE"
+    };
 
 
     public Endless(String username) throws IOException {
         this.username = username;
-        frame = new JFrame("Endless Mode");
+        heartImageUrl = AssetResolver.resolveToUrl("main/resources/Images/heart.png").toExternalForm();
+        frame = new JFrame(I18n.t("Endless"));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 550);
         frame.setLocationRelativeTo(null);
@@ -87,8 +112,8 @@ public class Endless {
         linePanel.setBounds(0,56,800,2);
         linePanel.setBackground(Color.BLACK);
         frame.add(linePanel);
-        ImageIcon pause = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\pause.png", 29, 27,true);
-        ImageIcon pauseHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\pause hover.png", 29, 27,true);
+        ImageIcon pause = ImageUtils.createScaledIcon("main/resources/Images/pause.png", 29, 27,true);
+        ImageIcon pauseHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/pause hover.png", 29, 27,true);
         JButton pausebtn = new JButton(pause);
         pausebtn.setBounds(743,20,29, 27);
         pausebtn.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -103,14 +128,14 @@ public class Endless {
         shadowPanel.setVisible(false);
 
 // Example resume button on shadow panel
-        JButton resumeButton = new JButton("Resume");
+        JButton resumeButton = new JButton(I18n.t("Resume"));
         resumeButton.setFont(new Font("Century Gothic", Font.BOLD, 20));
         resumeButton.setBounds(325, 150, 150, 50);
         shadowPanel.add(resumeButton);
 
 // Resume button logic
         resumeButton.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             playSound();
             shadowPanel.setVisible(false);
             frame.requestFocusInWindow(); // regain key focus   1`q
@@ -119,31 +144,40 @@ public class Endless {
             movementTimer.start();
             isPaused = false;
         });
-        JButton settingsButton = new JButton("Settings");
+        JButton settingsButton = new JButton(I18n.t("Settings"));
         settingsButton.setFont(new Font("Century Gothic", Font.BOLD, 20));
         settingsButton.setBounds(325, 250, 150, 50);
         shadowPanel.add(settingsButton);
         settingsButton.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             new Settings(() -> {
-                SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
-                // for example: re-show the HomePage
+                SoundManager.playEffect("main/resources/Audio/Click.WAV");
                 shadowPanel.setVisible(true);
+            }, () -> {
+                SoundManager.stopBackgroundMusic();
+                if (movementTimer != null) movementTimer.stop();
+                if (timeElapsedTimer != null) timeElapsedTimer.stop();
+                frame.dispose();
+                try {
+                    new HomePage();
+                } catch (IOException ex) {
+                    throw new IllegalStateException("Could not reopen the homepage", ex);
+                }
             });
             ThemeManager.applyTheme(ThemeManager.getCurrentTheme());
         });
 
-        JButton quitButton = new JButton("Quit");
+        JButton quitButton = new JButton(I18n.t("Quit"));
         quitButton.setFont(new Font("Century Gothic", Font.BOLD, 20));
         quitButton.setBounds(325, 350, 150, 50);
         shadowPanel.add(quitButton);
         quitButton.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
-            String[] options = {"Homepage", "Exit Game"};
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
+            String[] options = {I18n.t("Homepage"), I18n.t("Exit Game")};
             int choice = JOptionPane.showOptionDialog(
                     frame,                                       // parent component
-                    "What would you like to do?",                // message
-                    "Quit Game",                                 // title
+                    I18n.t("What would you like to do?"),        // message
+                    I18n.t("Quit Game"),                         // title
                     JOptionPane.DEFAULT_OPTION,                  // optionType
                     JOptionPane.QUESTION_MESSAGE,                // messageType
                     null,                                        // icon
@@ -181,7 +215,7 @@ public class Endless {
         shadowPanel.setVisible(false);
         pausebtn.setRolloverIcon(pauseHoverbtn);
         pausebtn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             if (!isPaused) {
                 isPaused = true;
                 SoundManager.stopBackgroundMusic();
@@ -193,10 +227,10 @@ public class Endless {
         });
         frame.add(pausebtn);
 
-        RoundedButton backBtn = new RoundedButton("← Back",false);
+        RoundedButton backBtn = new RoundedButton("← " + I18n.t("Back"),false);
         backBtn.setBounds(5, 19, 100, 30);
         backBtn.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             try {
                 new Gamemode();
             } catch (IOException ex) {
@@ -211,17 +245,17 @@ public class Endless {
         });
         frame.getContentPane().add(backBtn);
 
-        timerLabel = new JLabel("Time: 0s");
+        timerLabel = new JLabel(I18n.t("Time:") + " 0s");
         timerLabel.setFont(new Font("Century Gothic", Font.BOLD, 30));
         timerLabel.setBounds(350, 500, 150, 30);
         frame.add(timerLabel);
 
-        scoreLabel = new JLabel("SCORE: 0");
+        scoreLabel = new JLabel(I18n.t("SCORE:") + " 0");
         scoreLabel.setFont(new Font("Century Gothic", Font.BOLD, 30));
         scoreLabel.setBounds(350, 66, 150, 30);
         frame.add(scoreLabel);
 
-        ImageIcon levelUpimg = new ImageIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\levelupEnd.png");
+        ImageIcon levelUpimg = assetIcon("main/resources/Images/levelupEnd.png");
         Image img = levelUpimg.getImage();
         Image resizedImg = img.getScaledInstance(30, 30, Image.SCALE_SMOOTH);
         ImageIcon resLevelUp = new ImageIcon(resizedImg);
@@ -230,7 +264,7 @@ public class Endless {
         levelImgs.setBounds(700,66,30,30);
         frame.add(levelImgs);
 
-        ImageIcon clockimg = new ImageIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\clockinclock.png");
+        ImageIcon clockimg = assetIcon("main/resources/Images/clockinclock.png");
         Image imgclock = clockimg.getImage();
         Image resizedclockImg = imgclock.getScaledInstance(80, 95, Image.SCALE_SMOOTH);
         ImageIcon resclockimg = new ImageIcon(resizedclockImg);
@@ -271,6 +305,7 @@ public class Endless {
         frame.requestFocusInWindow();
 
         random = new Random();
+        wordCycle = new WordCycle(I18n.isFrench() ? frenchSpeeches : speeches, random);
         startNewText();
         frame.addKeyListener(new KeyAdapter() {
             @Override
@@ -314,7 +349,7 @@ public class Endless {
                             formattedText.append("<font color='green'>").append(currentText.charAt(i)).append("</font>");
                         } else if (i == index[0] && Character.toLowerCase(typedChar) != Character.toLowerCase(currentText.charAt(index[0]))) {
                             formattedText.append("<font color='red'>").append(currentText.charAt(i)).append("</font>");
-                            playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\0429.WAV");
+                            playEffect("main/resources/Audio/0429.WAV");
                             mistakeMade = true;
                             hearts--;
                             errorCount++;
@@ -347,7 +382,7 @@ public class Endless {
                     if (!mistakeMade) {
                         index[0]++;
                         score++;
-                        scoreLabel.setText("Score: " + score);
+                        scoreLabel.setText(I18n.t("Score:") + " " + score);
                     }
                     if (index[0] >= currentText.length()) {
                         startNewText();
@@ -359,7 +394,7 @@ public class Endless {
         timeElapsedTimer = new Timer(1000, e -> {
             if (!isPaused) {
                 elapsedTime++;
-                timerLabel.setText("Time: " + elapsedTime + "s");
+                timerLabel.setText(I18n.t("Time:") + " " + elapsedTime + "s");
 
                 if (elapsedTime % 50 == 0) {  // Every 60 seconds
                     isPaused = true;
@@ -374,7 +409,7 @@ public class Endless {
 
     private void startNewText() {
         index[0] = 0;
-        currentText = speeches[random.nextInt(speeches.length)];
+        currentText = wordCycle.next();
         textLabel.setText(currentText);
         xPosition = 800; // Start from the right
         int textWidth = getTextWidth(currentText);
@@ -433,7 +468,7 @@ public class Endless {
 
         level++; // Increment level
         levelLabel.setText(String.valueOf(level));
-        JOptionPane.showMessageDialog(null, "Level " + level + " Reached!", "Level Up", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, I18n.t("Level") + " " + level + I18n.t("Reached!"), I18n.t("Level Up"), JOptionPane.INFORMATION_MESSAGE);
 
         // Increase speed only when new level is reached
         speed += speedIncrement;
@@ -442,7 +477,7 @@ public class Endless {
         startNewText(); // Resume with new speech
     }
     public static void saveEndlessScore(String username, int score) {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db")) {
+        try (Connection conn = DBUtil.getConnection()) {
             // 1) get user_id
             PreparedStatement getUserId = conn.prepareStatement(
                     "SELECT id FROM users WHERE username = ?");
@@ -478,13 +513,13 @@ public class Endless {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
+                    I18n.t("Database Error"), JOptionPane.ERROR_MESSAGE);
         }
     }
 
 
     public static String getHighScore(String username) {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:game_scores.db")) {
+        try (Connection conn = DBUtil.getConnection()) {
             PreparedStatement stmt = conn.prepareStatement("""
             SELECT MAX(v.score) AS high_score
             FROM endless_scores v
@@ -496,19 +531,19 @@ public class Endless {
 
             if (rs.next() && rs.getInt("high_score") > 0) {
                 int score = rs.getInt("high_score");
-                return "High Score: " + score;
+                return I18n.t("High Score:") + " " + score;
             } else {
-                return "High Score: 0";
+                return I18n.t("High Score:") + " 0";
             }
         } catch (SQLException ex) {
-            return "Error retrieving score: " + ex.getMessage();
+            return I18n.t("Error retrieving score:") + " " + ex.getMessage();
         }
     }
 
     private void updateHeartsDisplay() {
         StringBuilder heartIcons = new StringBuilder("<html>");
         for (int i = 0; i < hearts; i++) {
-            heartIcons.append("<img src='file:C:\\Users\\User\\Documents\\untitled\\src\\Images\\heart.png'> ");
+            heartIcons.append("<img src='").append(heartImageUrl).append("'> ");
         }
         heartsLabel.setText(heartIcons.toString());
     }
@@ -528,19 +563,12 @@ public class Endless {
         saveEndlessScore(username,score);
         saveStatistics(username, wpm, accuracy, errorCount, totalWords);
 
-        JOptionPane.showMessageDialog(null, "Game Over!\nYour Score: " + score, "Game Over", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, I18n.t("Game Over!") + "\n" + I18n.t("Your Score:") + " " + score, I18n.t("Game Over!"), JOptionPane.INFORMATION_MESSAGE);
         new Gamemode();
         frame.setVisible(false);// Close the game
     }
     public void playEffect(String soundPath) {
-        try {
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File(soundPath));
-            Clip clip = AudioSystem.getClip();
-            clip.open(audioInputStream);
-            clip.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        SoundManager.playEffect(soundPath);
     }
 
     /**
@@ -557,8 +585,7 @@ public class Endless {
                                       double accuracy,
                                       int errorCount,
                                       int wordCount) {
-        String url = "jdbc:sqlite:game_scores.db";
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DBUtil.getConnection()) {
             conn.setAutoCommit(false);
 
             // 1) look up the user’s ID
@@ -574,8 +601,8 @@ public class Endless {
 
             // 2) insert the stats row
             PreparedStatement ins = conn.prepareStatement(
-                    "INSERT INTO statistics (user_id, wpm, accuracy, errorCount, wordCount) " +
-                            "VALUES (?, ?, ?, ?, ?)");
+                    "INSERT INTO statistics (user_id, wpm, accuracy, errorCount, wordCount, played_at) " +
+                            "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)");
             ins.setInt(1, userId);
             ins.setDouble(2, wpm);
             ins.setDouble(3, accuracy);

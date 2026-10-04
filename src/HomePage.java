@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HomePage {
-    private static final String DB_URL = "jdbc:sqlite:game_scores.db";
+    private static final String DB_URL = DBUtil.DB_URL;
     private JButton userButton;
     private JFrame frame;
     private static String selectedUsername;
@@ -30,7 +30,7 @@ public class HomePage {
     );
 
     HomePage() throws IOException {
-        frame = new JFrame("HOMEPAGE");
+        frame = new JFrame(I18n.t("HOMEPAGE"));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 550);
         frame.setLocationRelativeTo(null);
@@ -84,7 +84,7 @@ public class HomePage {
 
         userComboBox.addActionListener(e -> {
             String sel = (String) userComboBox.getSelectedItem();
-            if (ADD_USER_ENTRY.equals(sel)) {
+            if (I18n.t(ADD_USER_ENTRY).equals(sel)) {
                 addNewUser();                  // go straight to “add”
             } else {
                 selectedUsername = sel;        // switch users
@@ -93,7 +93,7 @@ public class HomePage {
         });
 
         ImageIcon info = ResourceUtils.createScaledIcon("main/resources/Images/INFO.png", 27, 27,true);
-        ImageIcon infoHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\INFO2.png", 27, 27,true);
+        ImageIcon infoHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/INFO2.png", 27, 27,true);
         JButton infolbl = new JButton(info);
         infolbl.setBounds(19,19,27,27);
         infolbl.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -110,8 +110,8 @@ public class HomePage {
         });
         JPanel shadowPanel = createShadowPanel();
 
-        ImageIcon settingsImg = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\settings.png", 27, 27,true);
-        ImageIcon settingsHover = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\settings 2.png", 27, 27,true);
+        ImageIcon settingsImg = ImageUtils.createScaledIcon("main/resources/Images/settings.png", 27, 27,true);
+        ImageIcon settingsHover = ImageUtils.createScaledIcon("main/resources/Images/settings 2.png", 27, 27,true);
         JButton settingslbl = new JButton(settingsImg);
         settingslbl.setBounds(56,19,27,27);
         settingslbl.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -120,11 +120,18 @@ public class HomePage {
         settingslbl.setBorderPainted(false);  // Remove border paint
         settingslbl.setRolloverIcon(settingsHover);
         settingslbl.addActionListener(e -> {
-            SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+            SoundManager.playEffect("main/resources/Audio/Click.WAV");
             new Settings(() -> {
-                SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
-                // for example: re-show the HomePage
+                SoundManager.playEffect("main/resources/Audio/Click.WAV");
                 frame.setVisible(true);
+            }, () -> {
+                SoundManager.stopBackgroundMusic();
+                frame.dispose();
+                try {
+                    new HomePage();
+                } catch (IOException ex) {
+                    throw new IllegalStateException("Could not reopen the homepage", ex);
+                }
             });
             ThemeManager.applyTheme(ThemeManager.getCurrentTheme());
         });
@@ -145,8 +152,8 @@ public class HomePage {
         });
 
 
-        ImageIcon startbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\LANCER.png", 48, 48,true);
-        ImageIcon startHoverbtn = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\LANCER2.png", 48, 48,true);
+        ImageIcon startbtn = ImageUtils.createScaledIcon("main/resources/Images/LANCER.png", 48, 48,true);
+        ImageIcon startHoverbtn = ImageUtils.createScaledIcon("main/resources/Images/LANCER2.png", 48, 48,true);
         JButton startbtnlbl = new JButton(startbtn);
         startbtnlbl.setBounds(370,375,48,48);
         startbtnlbl.setBorder(BorderFactory.createEmptyBorder());  // Remove border
@@ -157,7 +164,7 @@ public class HomePage {
         startbtnlbl.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SoundManager.playEffect("C:\\Users\\User\\Documents\\untitled\\src\\Audio\\Click.WAV");
+                SoundManager.playEffect("main/resources/Audio/Click.WAV");
                 SoundManager.stopBackgroundMusic();
                 try {
                     new Gamemode();
@@ -169,9 +176,10 @@ public class HomePage {
             }
         });
 
-        JLabel startlbl = new JLabel("Start");
+        JLabel startlbl = new JLabel(I18n.t("Start"));
         startlbl.setFont(new Font("Century Gothic",Font.PLAIN,20));
-        startlbl.setBounds(370, 415, 100, 50);
+        startlbl.setHorizontalAlignment(SwingConstants.CENTER);
+        startlbl.setBounds(344, 415, 100, 50);
         startlbl.setForeground(new Color(195, 88, 41));
 
 //        JLabel langlbl = new JLabel("Langue: ");
@@ -198,6 +206,24 @@ public class HomePage {
 //
 //        frame.add(langlbl);
 //        frame.add(dropdown);
+        JButton languageButton = new JButton(I18n.isFrench() ? "English" : "Français");
+        languageButton.setToolTipText(I18n.t("Switch language"));
+        languageButton.setBounds(650, 60, 115, 30);
+        languageButton.setForeground(Color.WHITE);
+        languageButton.setBackground(new Color(195, 88, 41));
+        languageButton.setFocusPainted(false);
+        languageButton.addActionListener(e -> {
+            I18n.setLanguage(I18n.isFrench() ? I18n.ENGLISH : I18n.FRENCH);
+            SoundManager.stopBackgroundMusic();
+            frame.dispose();
+            try {
+                new HomePage();
+            } catch (IOException ex) {
+                throw new IllegalStateException("Could not reopen the homepage", ex);
+            }
+        });
+        frame.add(languageButton);
+
         frame.add(startbtnlbl);
         frame.add(startlbl);
         frame.add(infolbl);
@@ -240,11 +266,11 @@ public class HomePage {
 
         DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
         if (users.isEmpty()) {
-            model.addElement(ADD_USER_ENTRY);
+            model.addElement(I18n.t(ADD_USER_ENTRY));
             selectedUsername = null;
         } else {
             users.forEach(model::addElement);
-            model.addElement(ADD_USER_ENTRY);
+            model.addElement(I18n.t(ADD_USER_ENTRY));
 
             if (preferredUsername != null && users.contains(preferredUsername)) {
                 selectedUsername = preferredUsername;
@@ -258,7 +284,7 @@ public class HomePage {
         if (selectedUsername != null) {
             userComboBox.setSelectedItem(selectedUsername);
         } else {
-            userComboBox.setSelectedItem(ADD_USER_ENTRY);
+            userComboBox.setSelectedItem(I18n.t(ADD_USER_ENTRY));
         }
     }
 
@@ -279,7 +305,7 @@ public class HomePage {
             addNewUser();
         } else {
             String[] userArray = users.toArray(new String[0]);
-            String selected = (String) JOptionPane.showInputDialog(frame, "Choose your user:", "User Selection",
+            String selected = (String) JOptionPane.showInputDialog(frame, I18n.t("Choose your user:"), I18n.t("User Selection"),
                     JOptionPane.PLAIN_MESSAGE, null, userArray, userArray[0]);
 
             if (selected != null) {
@@ -291,20 +317,42 @@ public class HomePage {
     }
 
     private void addNewUser() {
-        String newUsername = JOptionPane.showInputDialog(frame, "Enter your username:");
-        if (newUsername != null && !newUsername.trim().isEmpty()) {
-            try (Connection conn = DriverManager.getConnection(DB_URL);
-                 PreparedStatement stmt = conn.prepareStatement("INSERT INTO users (username) VALUES (?)")) {
-                stmt.setString(1, newUsername);
-                stmt.executeUpdate();
-                selectedUsername = newUsername;
-                updateLastUsedUser(newUsername);
-                userComboBox.setSelectedItem(selectedUsername);
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(frame, "Username already exists!", "Error", JOptionPane.ERROR_MESSAGE);
-                showUserSelectionDialog();
-            }
+        String typed = JOptionPane.showInputDialog(frame, I18n.t("Enter your username:"));
+        if (typed == null) {
+            return;
         }
+
+        String newUsername = typed.trim();
+        if (newUsername.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, I18n.t("Username cannot be empty."), I18n.t("Error"), JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement check = conn.prepareStatement("SELECT id FROM users WHERE LOWER(username) = LOWER(?)")) {
+            check.setString(1, newUsername);
+            ResultSet rs = check.executeQuery();
+            if (rs.next()) {
+                JOptionPane.showMessageDialog(frame, I18n.t("Username already exists! Please choose another."), I18n.t("Error"), JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(frame, I18n.t("Could not validate username: ") + e.getMessage(), I18n.t("Database Error"), JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("INSERT INTO users (username) VALUES (?)")) {
+            stmt.setString(1, newUsername);
+            stmt.executeUpdate();
+            selectedUsername = newUsername;
+            updateLastUsedUser(newUsername);
+            userComboBox.setSelectedItem(selectedUsername);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(frame, I18n.t("Username already exists! Please choose another."), I18n.t("Error"), JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         refreshUserCombo(selectedUsername);
         userComboBox.setSelectedItem(selectedUsername);
     }
@@ -341,7 +389,7 @@ public class HomePage {
         panel.setVisible(false);  // Initially hidden
 
         // Load the image to show in the panel
-        ImageIcon image = ImageUtils.createScaledIcon("C:\\Users\\User\\Documents\\untitled\\src\\Images\\handKey.png", 250, 150,true);
+        ImageIcon image = ImageUtils.createScaledIcon("main/resources/Images/handKey.png", 250, 150,true);
         JLabel imageLabel = new JLabel(image);
 
         // Add the image to the top of the panel
@@ -349,7 +397,18 @@ public class HomePage {
 
         // Create the text to show below the image
         JTextArea textArea = new JTextArea();
-        textArea.setText("1. \"Proper Hand Positioning\":\n" +
+        textArea.setText(I18n.isFrench()
+                ? "1. « Position des mains » :\n" +
+                "   - Gardez les poignets droits et alignés avec le clavier.\n" +
+                "   - Posez légèrement les doigts sur les touches de base (A, S, D, F, J, K, L, M).\n\n" +
+                "2. « Placement des doigts » :\n" +
+                "   - Main gauche : auriculaire sur A, annulaire sur S, majeur sur D, index sur F.\n" +
+                "   - Main droite : index sur J, majeur sur K, annulaire sur L, auriculaire sur M.\n" +
+                "   - Reposez les pouces légèrement sur la barre d’espace.\n\n" +
+                "3. « Technique de frappe » :\n" +
+                "   - Utilisez tous vos doigts et évitez de regarder le clavier.\n" +
+                "   - Appuyez doucement sur les touches et laissez-les remonter.\n"
+                : "1. \"Proper Hand Positioning\":\n" +
                 "   - \"Wrists\": Keep them straight and level with the keyboard to prevent strain.\n" +
                 "   - \"Fingers\": Rest lightly on the \"home row\" keys (A, S, D, F, J, K, L, ;).\n\n" +
                 "2. \"Finger Placement\":\n" +
@@ -381,6 +440,7 @@ public class HomePage {
 
 
     public static void main(String[] args) {
+        I18n.setLanguage(PreferencesManager.loadLanguageChoice());
         // figure out Dark vs Light
         ThemeManager.Theme startup =
                 PreferencesManager.loadThemeChoice().equalsIgnoreCase("Dark")
@@ -404,7 +464,12 @@ class BackgroundPanel extends JPanel {
     private Image backgroundImage;
 
     public BackgroundPanel(String imagePath) {
-        backgroundImage = new ImageIcon(imagePath).getImage();
+        try {
+            String resolvedPath = AssetResolver.resolve(imagePath);
+            backgroundImage = new ImageIcon(ImageUtils.loadImage(resolvedPath)).getImage();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load background image: " + imagePath, e);
+        }
         setLayout(null); // Allows absolute positioning if needed
     }
 
